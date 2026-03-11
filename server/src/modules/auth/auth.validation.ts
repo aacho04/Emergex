@@ -28,7 +28,10 @@ export const registerHospitalSchema = z.object({
   availableBeds: z.number().min(0).optional(),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
-});
+}).refine(
+  (data) => (data.availableBeds ?? 0) <= (data.totalBeds ?? 0),
+  { message: 'Available beds cannot exceed total beds', path: ['availableBeds'] }
+);
 
 export const createAmbulanceSchema = z.object({
   username: z.string().min(3).max(50),

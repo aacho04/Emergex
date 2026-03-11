@@ -57,6 +57,16 @@ export class HospitalController {
 
   async update(req: Request, res: Response, next: NextFunction) {
     try {
+      const { availableBeds, totalBeds } = req.body;
+      if (availableBeds != null && totalBeds != null && availableBeds > totalBeds) {
+        return res.status(400).json({ success: false, message: 'Available beds cannot exceed total beds' });
+      }
+      if (availableBeds != null && totalBeds == null) {
+        const existing = await Hospital.findOne({ user: (req as any).user.id });
+        if (existing && availableBeds > existing.totalBeds) {
+          return res.status(400).json({ success: false, message: 'Available beds cannot exceed total beds' });
+        }
+      }
       const userId = (req as any).user.id;
       const hospital = await Hospital.findOneAndUpdate({ user: userId }, req.body, { new: true });
       res.json({ success: true, data: hospital });

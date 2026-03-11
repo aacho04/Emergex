@@ -43,6 +43,10 @@ export default function HospitalSettingsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (Number(form.availableBeds) > Number(form.totalBeds)) {
+      setToast({ message: 'Available beds cannot exceed total beds', type: 'error' });
+      return;
+    }
     setSaving(true);
     try {
       await hospitalAPI.update({
