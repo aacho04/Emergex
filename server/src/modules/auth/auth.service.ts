@@ -15,10 +15,12 @@ import {
 } from './auth.validation';
 
 const generateToken = (user: IUser): string => {
+  const secret = process.env.JWT_SECRET || 'emergex_jwt_secret';
+  const expiresIn = (process.env.JWT_EXPIRES_IN || '7d') as any;
   return jwt.sign(
     { id: user._id, role: user.role, username: user.username },
-    process.env.JWT_SECRET || 'emergex_jwt_secret',
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    secret,
+    { expiresIn }
   );
 };
 
