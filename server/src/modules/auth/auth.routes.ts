@@ -8,7 +8,8 @@ const router = Router();
 
 router.post('/login', authController.login);
 router.post('/register-hospital', authController.registerHospital);
-router.get('/verify-email/:token', authController.verifyEmail);
+router.post('/verify-email', authController.verifyEmail);
+router.post('/resend-otp', authController.resendOTP);
 router.get('/me', authMiddleware, authController.getMe);
 
 // Super Admin only

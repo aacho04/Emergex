@@ -5,7 +5,7 @@ import Ambulance from '../ambulance/ambulance.model';
 import Hospital from '../hospital/hospital.model';
 import TrafficPolice from '../traffic-police/traffic.model';
 import { UserRole, AmbulanceStatus, DutyStatus } from '../../constants/roles';
-import { sendVerificationEmail } from '../../config/smtp';
+import { sendVerificationOTP } from '../../config/smtp';
 import {
   LoginInput,
   RegisterERSOfficerInput,
@@ -80,7 +80,9 @@ export class AuthService {
       throw new Error('Username or email already exists');
     }
 
-    const verificationToken = crypto.randomBytes(32).toString('hex');
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     const user = await User.create({
       username: data.username,
@@ -90,7 +92,8 @@ export class AuthService {
       email: data.email,
       phone: data.phone,
       isEmailVerified: false,
-      emailVerificationToken: verificationToken,
+      emailOTP: otp,
+      emailOTPExpiry: otpExpiry,
     });
 
     await Hospital.create({
@@ -110,25 +113,48 @@ export class AuthService {
     });
 
     try {
-      await sendVerificationEmail(data.email, verificationToken);
+      await sendVerificationOTP(data.email, otp);
     } catch (error) {
-      console.error('Failed to send verification email:', error);
+      console.error('Failed to send verification OTP:', error);
     }
 
-    return { message: 'Hospital registered. Please check your email to verify your account.' };
+    return { message: 'Hospital registered. Please check your email for the verification OTP.', email: data.email };
   }
 
-  async verifyEmail(token: string) {
-    const user = await User.findOne({ emailVerificationToken: token });
+  async verifyEmail(email: string, otp: string) {
+    const user = await User.findOne({ email, emailOTP: otp });
     if (!user) {
-      throw new Error('Invalid or expired verification token');
+      throw new Error('Invalid OTP');
+    }
+
+    if (user.emailOTPExpiry && user.emailOTPExpiry < new Date()) {
+      throw new Error('OTP has expired. Please request a new one.');
     }
 
     user.isEmailVerified = true;
-    user.emailVerificationToken = undefined;
+    user.emailOTP = undefined;
+    user.emailOTPExpiry = undefined;
     await user.save();
 
     return { message: 'Email verified successfully' };
+  }
+
+  async resendOTP(email: string) {
+    const user = await User.findOne({ email, role: UserRole.HOSPITAL, isEmailVerified: false });
+    if (!user) {
+      throw new Error('No unverified hospital found with this email');
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
+    user.emailOTP = otp;
+    user.emailOTPExpiry = otpExpiry;
+    await user.save();
+
+    await sendVerificationOTP(email, otp);
+
+    return { message: 'New OTP sent to your email' };
   }
 
   async createAmbulance(data: CreateAmbulanceInput) {

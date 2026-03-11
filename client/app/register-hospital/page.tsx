@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Building2, Siren, ArrowLeft } from 'lucide-react';
+import { Building2, Siren, ArrowLeft, Mail, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -15,7 +15,12 @@ import Link from 'next/link';
 
 export default function RegisterHospitalPage() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [step, setStep] = useState<'form' | 'otp' | 'done'>('form');
+  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const {
     register,
@@ -40,9 +45,10 @@ export default function RegisterHospitalPage() {
         ...data,
         specialties: data.specialties?.split(',').map((s: string) => s.trim()).filter(Boolean) || [],
       };
-      await authAPI.registerHospital(payload);
-      setSuccess(true);
-      setToast({ message: 'Registration successful! Please check your email to verify your account.', type: 'success' });
+      const res = await authAPI.registerHospital(payload);
+      setRegisteredEmail(res.data.data?.email || data.email);
+      setStep('otp');
+      setToast({ message: 'OTP sent to your email!', type: 'success' });
     } catch (error: any) {
       setToast({
         message: error.response?.data?.message || 'Registration failed.',
@@ -51,19 +57,137 @@ export default function RegisterHospitalPage() {
     }
   };
 
-  if (success) {
+  const handleOtpChange = (index: number, value: string) => {
+    if (value.length > 1) value = value.slice(-1);
+    if (!/^\d*$/.test(value)) return;
+
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pasted.length === 6) {
+      setOtp(pasted.split(''));
+      inputRefs.current[5]?.focus();
+    }
+  };
+
+  const verifyOTP = async () => {
+    const otpString = otp.join('');
+    if (otpString.length !== 6) {
+      setToast({ message: 'Please enter the complete 6-digit OTP', type: 'error' });
+      return;
+    }
+
+    setVerifying(true);
+    try {
+      await authAPI.verifyEmail(registeredEmail, otpString);
+      setStep('done');
+      setToast({ message: 'Email verified successfully!', type: 'success' });
+    } catch (error: any) {
+      setToast({
+        message: error.response?.data?.message || 'Invalid OTP. Please try again.',
+        type: 'error',
+      });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const resendOTP = async () => {
+    setResending(true);
+    try {
+      await authAPI.resendOTP(registeredEmail);
+      setOtp(['', '', '', '', '', '']);
+      inputRefs.current[0]?.focus();
+      setToast({ message: 'New OTP sent to your email!', type: 'success' });
+    } catch (error: any) {
+      setToast({
+        message: error.response?.data?.message || 'Failed to resend OTP.',
+        type: 'error',
+      });
+    } finally {
+      setResending(false);
+    }
+  };
+
+  // OTP Verification Step
+  if (step === 'otp') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <Card className="max-w-md w-full text-center">
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+        <Card className="max-w-md w-full text-center p-8">
+          <div className="inline-flex p-3 rounded-xl bg-primary-50 mb-4">
+            <Mail className="h-8 w-8 text-primary-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Verify Your Email</h2>
+          <p className="text-gray-500 mb-1">We sent a 6-digit OTP to</p>
+          <p className="text-sm font-semibold text-gray-900 mb-6">{registeredEmail}</p>
+
+          <div className="flex justify-center gap-2 mb-6" onPaste={handleOtpPaste}>
+            {otp.map((digit, i) => (
+              <input
+                key={i}
+                ref={(el) => { inputRefs.current[i] = el; }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleOtpChange(i, e.target.value)}
+                onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                className="w-12 h-14 text-center text-xl font-bold border-2 border-gray-200 rounded-xl focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all"
+              />
+            ))}
+          </div>
+
+          <Button onClick={verifyOTP} loading={verifying} className="w-full mb-4" size="lg">
+            Verify OTP
+          </Button>
+
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+            <span>Didn&apos;t receive the OTP?</span>
+            <button
+              onClick={resendOTP}
+              disabled={resending}
+              className="text-primary-600 font-medium hover:underline inline-flex items-center gap-1 disabled:opacity-50"
+            >
+              {resending ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : null}
+              Resend
+            </button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // Success Step
+  if (step === 'done') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <Card className="max-w-md w-full text-center p-8">
           <div className="inline-flex p-3 rounded-xl bg-green-50 mb-4">
             <Building2 className="h-8 w-8 text-green-600" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Registration Successful</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Registration Complete!</h2>
           <p className="text-gray-500 mb-6">
-            Please check your email to verify your account. Once verified, you can log in to your hospital dashboard.
+            Your email has been verified. You can now log in to your hospital dashboard.
           </p>
           <Link href="/login">
-            <Button className="w-full">Go to Login</Button>
+            <Button className="w-full" size="lg">Go to Login</Button>
           </Link>
         </Card>
       </div>

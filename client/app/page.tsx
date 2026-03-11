@@ -112,10 +112,10 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h1 className="text-4xl lg:text-6xl font-extrabold leading-tight">
-                Emergency Response
+              <h1 className="text-4xl lg:text-6xl font-extrabold leading-tight text-white">
+                Every Second
                 <br />
-                <span className="text-accent-300">At Your Fingertips</span>
+                Saves a Life
               </h1>
               <p className="mt-6 text-lg text-primary-100 leading-relaxed max-w-xl">
                 Emergex connects citizens, ERS officers, ambulances, hospitals, traffic police, and volunteers for swift and coordinated emergency response.
@@ -123,9 +123,9 @@ export default function HomePage() {
               <div className="mt-10 flex flex-col sm:flex-row gap-4">
                 <button
                   onClick={handleSOSClick}
-                  className="sos-button inline-flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl px-10 py-5 text-xl transition-colors shadow-2xl shadow-red-600/40"
+                  className="sos-button inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg px-6 py-3 text-base transition-colors"
                 >
-                  <Phone className="h-7 w-7" />
+                  <Phone className="h-5 w-5" />
                   SOS - Call 108
                 </button>
                 <Link href="/login">

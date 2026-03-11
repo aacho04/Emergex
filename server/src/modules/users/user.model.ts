@@ -12,6 +12,8 @@ export interface IUser extends Document {
   isActive: boolean;
   isEmailVerified: boolean;
   emailVerificationToken?: string;
+  emailOTP?: string;
+  emailOTPExpiry?: Date;
   location?: {
     type: string;
     coordinates: [number, number];
@@ -68,6 +70,12 @@ const userSchema = new Schema<IUser>(
     emailVerificationToken: {
       type: String,
     },
+    emailOTP: {
+      type: String,
+    },
+    emailOTPExpiry: {
+      type: Date,
+    },
     location: {
       type: {
         type: String,
@@ -105,6 +113,8 @@ userSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;
   delete obj.emailVerificationToken;
+  delete obj.emailOTP;
+  delete obj.emailOTPExpiry;
   return obj;
 };
 
