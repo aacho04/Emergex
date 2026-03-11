@@ -17,7 +17,7 @@ export class HospitalController {
 
   async getAllAdmin(req: Request, res: Response, next: NextFunction) {
     try {
-      const hospitals = await Hospital.find().populate('user', 'fullName username email isActive');
+      const hospitals = await Hospital.find().populate('user', 'fullName username email isActive isEmailVerified');
       res.json({ success: true, data: hospitals });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });

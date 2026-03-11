@@ -65,12 +65,12 @@ export default function HospitalsPage() {
               ) : (
                 hospitals.map((h: any) => (
                   <tr key={h._id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                    <td className="py-3 px-4 text-sm font-medium text-gray-900">{h.name}</td>
+                    <td className="py-3 px-4 text-sm font-medium text-gray-900">{h.hospitalName || h.name}</td>
                     <td className="py-3 px-4 text-sm text-gray-600 max-w-[200px] truncate">{h.address}</td>
                     <td className="py-3 px-4 text-sm text-gray-600">{h.phone}</td>
                     <td className="py-3 px-4 text-sm text-gray-600">{h.totalBeds}</td>
                     <td className="py-3 px-4">
-                      {h.emailVerified ? (
+                      {h.user?.isEmailVerified ? (
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700"><CheckCircle className="h-3.5 w-3.5" /> Verified</span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600"><XCircle className="h-3.5 w-3.5" /> Pending</span>
