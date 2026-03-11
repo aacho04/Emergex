@@ -39,11 +39,10 @@ export function StatCard({ title, value, icon: IconProp, color = 'blue', subtitl
     teal: 'text-teal-600',
   };
 
-  // Check if IconProp is a Lucide component (function) or a ReactNode
-  const isComponent = typeof IconProp === 'function';
-  const iconElement = isComponent
-    ? React.createElement(IconProp as LucideIcon, { className: 'h-6 w-6' })
-    : IconProp;
+  // Check if IconProp is already a rendered element or a component to instantiate
+  const iconElement = React.isValidElement(IconProp)
+    ? IconProp
+    : React.createElement(IconProp as LucideIcon, { className: 'h-6 w-6' });
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-card p-6">
