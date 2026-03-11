@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore, useAuthHydration } from '@/store/authStore';
 import { PageLoader } from '@/components/ui/LoadingSpinner';
 import { getRoleDashboardPath } from '@/utils/helpers';
 
@@ -14,8 +14,10 @@ interface AuthGuardProps {
 export default function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
   const router = useRouter();
   const { token, user } = useAuthStore();
+  const hydrated = useAuthHydration();
 
   useEffect(() => {
+    if (!hydrated) return;
     if (!token || !user) {
       router.replace('/login');
       return;
@@ -25,9 +27,9 @@ export default function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
       // Redirect to their own dashboard if they access wrong role's page
       router.replace(getRoleDashboardPath(user.role));
     }
-  }, [token, user, allowedRoles, router]);
+  }, [token, user, allowedRoles, router, hydrated]);
 
-  if (!token || !user) {
+  if (!hydrated || !token || !user) {
     return <PageLoader />;
   }
 

@@ -4,12 +4,16 @@ import connectDB from './config/db';
 import { initSocket } from './config/socket';
 import { setupLocationSocket } from './sockets/location.socket';
 import { setupNotificationSocket } from './sockets/notification.socket';
+import { ensureSuperAdmin } from './seeds/seed';
 
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   // Connect to MongoDB
   await connectDB();
+
+  // Ensure Super Admin exists
+  await ensureSuperAdmin();
 
   // Create HTTP server
   const httpServer = http.createServer(app);

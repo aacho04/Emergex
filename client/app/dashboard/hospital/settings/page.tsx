@@ -8,15 +8,17 @@ import { Input } from '@/components/ui/Input';
 import { Toast } from '@/components/ui/Toast';
 import { PageLoader } from '@/components/ui/LoadingSpinner';
 import { hospitalAPI } from '@/services/api';
+import { useRouter } from 'next/navigation';
 
 export default function HospitalSettingsPage() {
   const [hospital, setHospital] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const router = useRouter();
 
   const [form, setForm] = useState({
-    name: '', address: '', phone: '',
+    hospitalName: '', address: '', phone: '',
     totalBeds: 0, availableBeds: 0,
     specialties: '',
   });
@@ -28,7 +30,7 @@ export default function HospitalSettingsPage() {
         const h = res.data.data;
         setHospital(h);
         setForm({
-          name: h.name || '',
+          hospitalName: h.hospitalName || h.name || '',
           address: h.address || '',
           phone: h.phone || '',
           totalBeds: h.totalBeds || 0,
@@ -56,6 +58,7 @@ export default function HospitalSettingsPage() {
         specialties: form.specialties.split(',').map((s: string) => s.trim()).filter(Boolean),
       });
       setToast({ message: 'Hospital settings updated', type: 'success' });
+      setTimeout(() => router.push('/dashboard/hospital'), 1000);
     } catch (error: any) {
       setToast({ message: error.response?.data?.message || 'Failed to update', type: 'error' });
     } finally { setSaving(false); }
@@ -78,8 +81,8 @@ export default function HospitalSettingsPage() {
           <div className="px-6 pb-6 space-y-4">
             <Input
               label="Hospital Name"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              value={form.hospitalName}
+              onChange={(e) => setForm({ ...form, hospitalName: e.target.value })}
             />
             <Input
               label="Address"

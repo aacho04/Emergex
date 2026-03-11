@@ -43,6 +43,7 @@ export default function RegisterHospitalPage() {
     try {
       const payload = {
         ...data,
+        username: data.email,
         specialties: data.specialties?.split(',').map((s: string) => s.trim()).filter(Boolean) || [],
       };
       const res = await authAPI.registerHospital(payload);
@@ -300,21 +301,14 @@ export default function RegisterHospitalPage() {
 
             <div className="border-t border-gray-100 pt-5">
               <h3 className="text-sm font-semibold text-gray-700 mb-3">Login Credentials</h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                <Input
-                  label="Username"
-                  placeholder="Choose a username"
-                  error={errors.username?.message}
-                  {...register('username')}
-                />
-                <Input
-                  label="Password"
-                  type="password"
-                  placeholder="Choose a password"
-                  error={errors.password?.message}
-                  {...register('password')}
-                />
-              </div>
+              <p className="text-xs text-gray-500 mb-3">Your email will be used as your username to log in.</p>
+              <Input
+                label="Password"
+                type="password"
+                placeholder="Choose a password"
+                error={errors.password?.message}
+                {...register('password')}
+              />
             </div>
 
             <Button type="submit" className="w-full" size="lg" loading={isSubmitting}>

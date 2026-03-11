@@ -1,6 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
+import { useEffect, useState } from 'react';
 import { UserRole } from '@/types/user.types';
 
 interface AuthUser {
@@ -14,19 +15,16 @@ interface AuthUser {
 interface AuthState {
   user: AuthUser | null;
   token: string | null;
+  _hydrated: boolean;
   setAuth: (token: string, user: AuthUser) => void;
   clearAuth: () => void;
+  _hydrate: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user:
-    typeof window !== 'undefined' && localStorage.getItem('emergex_user')
-      ? JSON.parse(localStorage.getItem('emergex_user')!)
-      : null,
-  token:
-    typeof window !== 'undefined'
-      ? localStorage.getItem('emergex_token')
-      : null,
+  user: null,
+  token: null,
+  _hydrated: false,
   setAuth: (token, user) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('emergex_token', token);
@@ -41,4 +39,26 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
     set({ token: null, user: null });
   },
+  _hydrate: () => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('emergex_token');
+      const userStr = localStorage.getItem('emergex_user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      set({ token, user, _hydrated: true });
+    }
+  },
 }));
+
+// Hook to hydrate auth state from localStorage on mount (client-only)
+export function useAuthHydration() {
+  const hydrate = useAuthStore((s) => s._hydrate);
+  const hydrated = useAuthStore((s) => s._hydrated);
+
+  useEffect(() => {
+    if (!hydrated) {
+      hydrate();
+    }
+  }, [hydrate, hydrated]);
+
+  return hydrated;
+}

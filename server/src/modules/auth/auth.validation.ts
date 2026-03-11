@@ -15,7 +15,7 @@ export const registerERSOfficerSchema = z.object({
 });
 
 export const registerHospitalSchema = z.object({
-  username: z.string().min(3).max(50),
+  username: z.string().min(3).max(100).optional(),
   password: z.string().min(6),
   fullName: z.string().min(2).max(100),
   email: z.string().email('Valid email is required'),

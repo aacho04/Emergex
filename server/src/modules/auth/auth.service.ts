@@ -73,11 +73,12 @@ export class AuthService {
   }
 
   async registerHospital(data: RegisterHospitalInput) {
+    const username = data.username || data.email;
     const existing = await User.findOne({
-      $or: [{ username: data.username }, { email: data.email }],
+      $or: [{ username }, { email: data.email }],
     });
     if (existing) {
-      throw new Error('Username or email already exists');
+      throw new Error('Email already exists');
     }
 
     // Generate 6-digit OTP
@@ -85,7 +86,7 @@ export class AuthService {
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     const user = await User.create({
-      username: data.username,
+      username,
       password: data.password,
       fullName: data.fullName,
       role: UserRole.HOSPITAL,

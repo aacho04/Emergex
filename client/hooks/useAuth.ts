@@ -2,16 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore, useAuthHydration } from '@/store/authStore';
 import { authAPI } from '@/services/api';
 import { UserRole } from '@/types/user.types';
 
 export const useAuth = () => {
   const router = useRouter();
   const { user, token, setAuth, clearAuth } = useAuthStore();
+  const hydrated = useAuthHydration();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!hydrated) return;
     const checkAuth = async () => {
       if (token) {
         try {
@@ -24,7 +26,7 @@ export const useAuth = () => {
       setLoading(false);
     };
     checkAuth();
-  }, []);
+  }, [hydrated]);
 
   const login = async (username: string, password: string) => {
     const res = await authAPI.login({ username, password });

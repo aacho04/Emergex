@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore, useAuthHydration } from '@/store/authStore';
 import {
   Siren,
   LayoutDashboard,
@@ -74,18 +74,20 @@ function getSidebarLinks(role: UserRole): SidebarLink[] {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, clearAuth, token } = useAuthStore();
+  const hydrated = useAuthHydration();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentPath, setCurrentPath] = useState('');
 
   useEffect(() => {
+    if (!hydrated) return;
     if (!token || !user) {
       router.push('/login');
       return;
     }
     setCurrentPath(window.location.pathname);
-  }, [token, user, router]);
+  }, [token, user, router, hydrated]);
 
-  if (!user || !token) return null;
+  if (!hydrated || !user || !token) return null;
 
   const sidebarLinks = getSidebarLinks(user.role as UserRole);
 

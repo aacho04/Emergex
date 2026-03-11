@@ -46,7 +46,7 @@ export default function HospitalDashboard() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{hospital.name}</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{hospital.hospitalName || hospital.name}</h2>
           <p className="text-gray-500 mt-1">{hospital.address}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -66,7 +66,7 @@ export default function HospitalDashboard() {
         <StatCard title="Total Beds" value={hospital.totalBeds || 0} icon={Bed} color="primary" />
         <StatCard title="Available Beds" value={hospital.availableBeds || 0} icon={Bed} color="success" />
         <StatCard title="Specialties" value={hospital.specialties?.length || 0} icon={Activity} color="warning" />
-        <StatCard title="Emergency Capacity" value={hospital.emergencyCapacity || 'N/A'} icon={Building2} color="danger" />
+        <StatCard title="Emergency Capacity" value={hospital.emergencyCapacity ? 'Yes' : 'No'} icon={Building2} color="danger" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
