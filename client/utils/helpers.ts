@@ -48,7 +48,8 @@ export function formatStatusText(status: string): string {
     .join(' ');
 }
 
-export function formatDistance(km: number): string {
+export function formatDistance(km?: number | null): string {
+  if (km == null || isNaN(km)) return 'N/A';
   if (km < 1) {
     return `${Math.round(km * 1000)} m`;
   }

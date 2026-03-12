@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { AlertTriangle, MapPin, Ambulance, Building2, Shield, Navigation } from 'lucide-react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -9,12 +10,20 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Toast } from '@/components/ui/Toast';
 import { PageLoader } from '@/components/ui/LoadingSpinner';
-import { LocationPicker } from '@/components/maps/LocationPicker';
 import { emergencyAPI, ambulanceAPI, hospitalAPI, trafficPoliceAPI } from '@/services/api';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { emergencyFormSchema, EmergencyFormData } from '@/utils/validators';
 import { formatDistance } from '@/utils/helpers';
+
+const MapPicker = dynamic(() => import('@/components/maps/MapPicker'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[350px] rounded-lg bg-gray-100 flex items-center justify-center text-sm text-gray-400">
+      Loading Google Maps...
+    </div>
+  ),
+});
 
 export default function NewEmergencyPage() {
   const router = useRouter();
@@ -27,6 +36,7 @@ export default function NewEmergencyPage() {
   const [selectedHospital, setSelectedHospital] = useState('');
   const [selectedTraffic, setSelectedTraffic] = useState<string[]>([]);
   const [fetchingNearby, setFetchingNearby] = useState(false);
+  const [address, setAddress] = useState('');
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<EmergencyFormData>({
     resolver: zodResolver(emergencyFormSchema),
@@ -73,6 +83,7 @@ export default function NewEmergencyPage() {
       await emergencyAPI.create({
         ...data,
         location: { type: 'Point', coordinates: [location.lng, location.lat] },
+        address: address || undefined,
         assignedAmbulance: selectedAmbulance,
         assignedHospital: selectedHospital || undefined,
         assignedTrafficPolice: selectedTraffic.length > 0 ? selectedTraffic : undefined,
@@ -136,26 +147,78 @@ export default function NewEmergencyPage() {
           </div>
         </Card>
 
-        {/* Emergency Location */}
+        {/* Patient / Caller Location */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-danger-500" />
-              Emergency Location
+              Patient / Caller Location
             </CardTitle>
           </CardHeader>
           <div className="px-6 pb-6">
-            <LocationPicker
-              latitude={location?.lat || 0}
-              longitude={location?.lng || 0}
-              onLocationChange={(lat, lng) => setLocation({ lat, lng })}
-            />
-            {location && (
-              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
-                <Navigation className="h-4 w-4 inline mr-1" />
-                Location set: {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
+            <div className="space-y-4">
+              <p className="text-sm text-gray-500">Search for a place, click on the map, or enter coordinates manually.</p>
+
+              {/* Interactive Map with Search */}
+              <MapPicker
+                latitude={location?.lat || 0}
+                longitude={location?.lng || 0}
+                onLocationChange={(lat, lng) => setLocation({ lat, lng })}
+                onAddressFound={(addr) => setAddress(addr)}
+              />
+
+              {/* Manual lat/lng inputs */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Latitude</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={location?.lat || ''}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      if (!isNaN(val)) setLocation({ lat: val, lng: location?.lng || 0 });
+                    }}
+                    className="input-field text-sm"
+                    placeholder="e.g., 18.5204"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Longitude</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={location?.lng || ''}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      if (!isNaN(val)) setLocation({ lat: location?.lat || 0, lng: val });
+                    }}
+                    className="input-field text-sm"
+                    placeholder="e.g., 73.8567"
+                  />
+                </div>
               </div>
-            )}
+
+              {/* Address (optional) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Address (Optional)</label>
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="input-field text-sm"
+                  placeholder="e.g., Near City Mall, MG Road, Pune"
+                />
+              </div>
+
+              {location && location.lat !== 0 && location.lng !== 0 && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+                  <Navigation className="h-4 w-4 inline mr-1" />
+                  Patient location set: {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
+                  {address && <span className="ml-2">— {address}</span>}
+                </div>
+              )}
+            </div>
           </div>
         </Card>
 
