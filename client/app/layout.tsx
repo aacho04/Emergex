@@ -12,6 +12,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Emergex - Emergency Response System',
   description: 'Real-time emergency response management connecting citizens, ERS officers, ambulances, hospitals, traffic police, and volunteers.',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

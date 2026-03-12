@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Emergex">
+  <rect width="64" height="64" rx="12" fill="#dc2626"/>
+  <path d="M20 20h24v8H20zm0 16h24v8H20z" fill="#fff"/>
+  <path d="M28 12h8v40h-8z" fill="#fff"/>
+</svg>

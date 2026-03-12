@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { MapPin, CheckCircle2, XCircle, Loader2, Navigation } from 'lucide-react';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://emergex.onrender.com/api';
 
 export default function ShareLocationPage({ params }: { params: { token: string } }) {
   const [status, setStatus] = useState<'requesting' | 'sending' | 'success' | 'error' | 'denied'>('requesting');

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import LiveTrackingMap, { MapMarker } from '@/components/maps/LiveTrackingMap';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://emergex.onrender.com/api';
 
 interface NearbyAmbulance {
   _id: string;
