@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const publicPaths = ['/', '/login', '/register-hospital'];
+const publicPaths = ['/', '/login', '/register-hospital', '/share-location'];
 
 const rolePaths: Record<string, string> = {
   super_admin: '/dashboard/super-admin',
@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
 
   // Allow public paths
-  if (publicPaths.some((p) => pathname === p || pathname.startsWith('/api'))) {
+  if (publicPaths.some((p) => pathname === p || pathname.startsWith(p + '/') || pathname.startsWith('/api'))) {
     return NextResponse.next();
   }
 

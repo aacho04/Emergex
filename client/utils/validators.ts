@@ -59,18 +59,10 @@ export const createTrafficPoliceSchema = z.object({
 });
 
 export const emergencyFormSchema = z.object({
-  callerPhone: z.string().optional(),
+  callerPhone: z.string().min(10, 'Valid phone number required'),
   patientName: z.string().optional(),
-  patientAge: z.number().optional(),
-  patientGender: z.enum(['male', 'female', 'other']).optional(),
   patientCondition: z.enum(['critical', 'serious', 'moderate', 'minor']),
   description: z.string().optional(),
-  latitude: z.number().min(-90).max(90),
-  longitude: z.number().min(-180).max(180),
-  address: z.string().optional(),
-  ambulanceId: z.string().optional(),
-  trafficPoliceIds: z.array(z.string()).optional(),
-  hospitalId: z.string().optional(),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;

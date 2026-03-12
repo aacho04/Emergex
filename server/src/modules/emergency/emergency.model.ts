@@ -1,16 +1,22 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { EmergencyStatus, PatientCondition } from '../../constants/roles';
 
+export type LocationSource = 'sms_link' | 'manual';
+
 export interface IEmergency extends Document {
   callerPhone?: string;
   patientName?: string;
-  patientCondition: PatientCondition;
+  patientCondition?: PatientCondition;
   description?: string;
   location: {
     type: string;
     coordinates: [number, number];
     address?: string;
   };
+  locationConfirmed: boolean;
+  locationSource?: LocationSource;
+  smsToken?: string;
+  smsTokenExpiry?: Date;
   status: EmergencyStatus;
   assignedBy: mongoose.Types.ObjectId;
   assignedAmbulance?: mongoose.Types.ObjectId;
@@ -44,7 +50,6 @@ const emergencySchema = new Schema<IEmergency>(
     patientCondition: {
       type: String,
       enum: Object.values(PatientCondition),
-      required: true,
     },
     description: {
       type: String,
@@ -58,12 +63,27 @@ const emergencySchema = new Schema<IEmergency>(
       },
       coordinates: {
         type: [Number],
-        required: true,
+        default: [0, 0],
       },
       address: {
         type: String,
         trim: true,
       },
+    },
+    locationConfirmed: {
+      type: Boolean,
+      default: false,
+    },
+    locationSource: {
+      type: String,
+      enum: ['sms_link', 'manual'],
+    },
+    smsToken: {
+      type: String,
+      index: true,
+    },
+    smsTokenExpiry: {
+      type: Date,
     },
     status: {
       type: String,

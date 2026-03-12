@@ -27,17 +27,22 @@ export enum DutyStatus {
   OFF_DUTY = 'off_duty',
 }
 
+export type LocationSource = 'sms_link' | 'manual';
+
 export interface Emergency {
   _id: string;
   callerPhone?: string;
   patientName?: string;
-  patientCondition: PatientCondition;
+  patientCondition?: PatientCondition;
   description?: string;
   location: {
     type: string;
     coordinates: [number, number];
     address?: string;
   };
+  locationConfirmed: boolean;
+  locationSource?: LocationSource;
+  smsToken?: string;
   status: EmergencyStatus;
   assignedBy: any;
   assignedAmbulance?: any;

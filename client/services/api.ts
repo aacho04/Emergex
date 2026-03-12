@@ -113,6 +113,12 @@ export const trafficPoliceAPI = {
 // Emergency APIs
 export const emergencyAPI = {
   create: (data: any) => api.post('/emergencies', data),
+  sendLocationSMS: (id: string) => api.post(`/emergencies/${id}/send-sms`),
+  setManualLocation: (id: string, data: { latitude: number; longitude: number; address?: string }) =>
+    api.post(`/emergencies/${id}/set-location`, data),
+  submitLocation: (token: string, data: { latitude: number; longitude: number }) =>
+    api.post(`/emergencies/location/${token}`, data),
+  dispatch: (id: string) => api.post(`/emergencies/${id}/dispatch`),
   getAll: (status?: string) =>
     api.get(`/emergencies${status ? `?status=${status}` : ''}`),
   getById: (id: string) => api.get(`/emergencies/${id}`),

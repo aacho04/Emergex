@@ -77,7 +77,7 @@ export default function ERSEmergenciesPage() {
                   <tr key={e._id} className="border-b border-gray-50 hover:bg-gray-50/50">
                     <td className="py-3 px-4">
                       <div className="text-sm font-medium text-gray-900">{e.patientName || 'Unknown'}</div>
-                      <div className="text-xs text-gray-500">{e.patientAge ? `${e.patientAge} yrs` : ''} {e.patientGender || ''}</div>
+                      <div className="text-xs text-gray-500">{e.callerPhone || ''}</div>
                     </td>
                     <td className="py-3 px-4"><Badge status={e.patientCondition} /></td>
                     <td className="py-3 px-4"><Badge status={e.status} /></td>

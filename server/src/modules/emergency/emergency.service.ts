@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import Emergency, { IEmergency } from './emergency.model';
 import Ambulance from '../ambulance/ambulance.model';
 import TrafficPolice from '../traffic-police/traffic.model';
@@ -6,103 +7,290 @@ import Hospital from '../hospital/hospital.model';
 import { AmbulanceStatus, DutyStatus, EmergencyStatus, PatientCondition } from '../../constants/roles';
 import { getIO } from '../../config/socket';
 import { calculateDistance } from '../../utils/distanceCalculator';
+import { isNearRoute } from '../../utils/routeHelper';
+import { sendLocationRequestSMS } from '../../utils/sms';
 
 export class EmergencyService {
+  /**
+   * Step 1: Create a new emergency with caller phone + basic info.
+   * Location is NOT required yet — it will come from SMS link or manual entry.
+   */
   async create(data: {
-    callerPhone?: string;
+    callerPhone: string;
     patientName?: string;
-    patientCondition: PatientCondition;
+    patientCondition?: PatientCondition;
     description?: string;
-    latitude: number;
-    longitude: number;
-    address?: string;
     assignedBy: string;
-    ambulanceId?: string;
-    trafficPoliceIds?: string[];
-    hospitalId?: string;
   }) {
     const emergency = await Emergency.create({
       callerPhone: data.callerPhone,
       patientName: data.patientName,
       patientCondition: data.patientCondition,
       description: data.description,
-      location: {
-        type: 'Point',
-        coordinates: [data.longitude, data.latitude],
-        address: data.address,
-      },
       assignedBy: data.assignedBy,
-      assignedAmbulance: data.ambulanceId,
-      assignedTrafficPolice: data.trafficPoliceIds || [],
-      assignedHospital: data.hospitalId,
-      status: data.ambulanceId ? EmergencyStatus.ASSIGNED : EmergencyStatus.PENDING,
+      locationConfirmed: false,
+      status: EmergencyStatus.PENDING,
       timeline: [
         {
           status: EmergencyStatus.PENDING,
           timestamp: new Date(),
-          note: 'Emergency created',
+          note: 'Emergency created — awaiting patient location',
           updatedBy: data.assignedBy,
         },
       ],
     });
 
-    // Calculate distances
-    if (data.ambulanceId) {
-      const ambulance = await Ambulance.findById(data.ambulanceId);
-      if (ambulance) {
-        emergency.distanceToAmbulance = calculateDistance(
-          data.latitude,
-          data.longitude,
-          ambulance.currentLocation.coordinates[1],
-          ambulance.currentLocation.coordinates[0]
-        );
+    return emergency;
+  }
 
-        // Mark ambulance as busy
-        ambulance.ambulanceStatus = AmbulanceStatus.BUSY;
-        ambulance.currentEmergency = emergency._id as any;
-        await ambulance.save();
+  /**
+   * Step 2: Send SMS with location link to the caller.
+   */
+  async sendLocationSMS(emergencyId: string, clientUrl: string) {
+    const emergency = await Emergency.findById(emergencyId);
+    if (!emergency) throw new Error('Emergency not found');
+    if (!emergency.callerPhone) throw new Error('No caller phone number on record');
 
-        // Notify ambulance
-        const io = getIO();
-        io.emit('ambulance:alert', {
-          ambulanceId: data.ambulanceId,
-          emergency: {
-            id: emergency._id,
-            location: { lat: data.latitude, lng: data.longitude },
-            patientCondition: data.patientCondition,
-            address: data.address,
-          },
-        });
+    // Generate a secure token
+    const token = crypto.randomBytes(32).toString('hex');
+    emergency.smsToken = token;
+    emergency.smsTokenExpiry = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+    await emergency.save();
 
-        emergency.timeline.push({
-          status: EmergencyStatus.ASSIGNED,
-          timestamp: new Date(),
-          note: 'Ambulance assigned',
-          updatedBy: data.assignedBy as any,
-        });
+    const locationUrl = `${clientUrl}/share-location/${token}`;
+    await sendLocationRequestSMS(emergency.callerPhone, locationUrl);
+
+    // Notify ERS dashboard
+    const io = getIO();
+    io.emit('emergency:sms-sent', {
+      emergencyId: emergency._id,
+      message: 'Location SMS sent to caller',
+    });
+
+    return { success: true, message: 'SMS sent successfully' };
+  }
+
+  /**
+   * Step 3a: Receive location from SMS link (public endpoint, no auth).
+   */
+  async receiveLocationFromLink(token: string, latitude: number, longitude: number) {
+    const emergency = await Emergency.findOne({
+      smsToken: token,
+      smsTokenExpiry: { $gt: new Date() },
+    });
+    if (!emergency) throw new Error('Invalid or expired location link');
+
+    emergency.location = {
+      type: 'Point',
+      coordinates: [longitude, latitude],
+    };
+    emergency.locationConfirmed = true;
+    emergency.locationSource = 'sms_link';
+    emergency.smsToken = undefined;
+    emergency.smsTokenExpiry = undefined;
+    emergency.timeline.push({
+      status: EmergencyStatus.PENDING,
+      timestamp: new Date(),
+      note: 'Patient location received via SMS link',
+    });
+    await emergency.save();
+
+    // Notify ERS dashboard in real-time
+    const io = getIO();
+    io.emit('emergency:location-received', {
+      emergencyId: emergency._id,
+      location: { lat: latitude, lng: longitude },
+      source: 'sms_link',
+    });
+
+    return emergency;
+  }
+
+  /**
+   * Step 3b: ERS manually sets/updates patient location.
+   */
+  async setManualLocation(emergencyId: string, latitude: number, longitude: number, address?: string) {
+    const emergency = await Emergency.findById(emergencyId);
+    if (!emergency) throw new Error('Emergency not found');
+
+    emergency.location = {
+      type: 'Point',
+      coordinates: [longitude, latitude],
+      address,
+    };
+    emergency.locationConfirmed = true;
+    emergency.locationSource = 'manual';
+    emergency.timeline.push({
+      status: EmergencyStatus.PENDING,
+      timestamp: new Date(),
+      note: 'Patient location set manually by ERS',
+    });
+    await emergency.save();
+
+    const io = getIO();
+    io.emit('emergency:location-received', {
+      emergencyId: emergency._id,
+      location: { lat: latitude, lng: longitude },
+      source: 'manual',
+    });
+
+    return emergency;
+  }
+
+  /**
+   * Step 4: DISPATCH — automatically assigns nearest ambulance, nearest hospital,
+   * and notifies only traffic police within 1–2 km of the ambulance route.
+   */
+  async dispatch(emergencyId: string, userId: string) {
+    const emergency = await Emergency.findById(emergencyId);
+    if (!emergency) throw new Error('Emergency not found');
+    if (!emergency.locationConfirmed) throw new Error('Patient location not confirmed yet');
+
+    const patientLat = emergency.location.coordinates[1];
+    const patientLng = emergency.location.coordinates[0];
+
+    // 1. Find nearest available ambulance
+    const availableAmbulances = await Ambulance.find({
+      dutyStatus: DutyStatus.ON_DUTY,
+      ambulanceStatus: AmbulanceStatus.AVAILABLE,
+      'currentLocation.coordinates': { $ne: [0, 0] },
+    }).populate('user', 'fullName username phone');
+
+    if (availableAmbulances.length === 0) {
+      throw new Error('No available ambulances found');
+    }
+
+    let nearestAmbulance = availableAmbulances[0];
+    let minAmbulanceDistance = Infinity;
+    for (const amb of availableAmbulances) {
+      const d = calculateDistance(
+        patientLat, patientLng,
+        amb.currentLocation.coordinates[1],
+        amb.currentLocation.coordinates[0]
+      );
+      if (d < minAmbulanceDistance) {
+        minAmbulanceDistance = d;
+        nearestAmbulance = amb;
       }
     }
 
-    if (data.hospitalId) {
-      const hospital = await Hospital.findById(data.hospitalId);
-      if (hospital) {
-        emergency.distanceToHospital = calculateDistance(
-          data.latitude,
-          data.longitude,
-          hospital.location.coordinates[1],
-          hospital.location.coordinates[0]
-        );
+    // 2. Find nearest hospital with available beds
+    const hospitals = await Hospital.find({
+      isVerified: true,
+      emergencyCapacity: true,
+      availableBeds: { $gt: 0 },
+      'location.coordinates': { $ne: [0, 0] },
+    });
+
+    let nearestHospital: any = null;
+    let minHospitalDistance = Infinity;
+    for (const hosp of hospitals) {
+      const d = calculateDistance(
+        patientLat, patientLng,
+        hosp.location.coordinates[1],
+        hosp.location.coordinates[0]
+      );
+      if (d < minHospitalDistance) {
+        minHospitalDistance = d;
+        nearestHospital = hosp;
       }
     }
 
-    // Notify traffic police
-    if (data.trafficPoliceIds && data.trafficPoliceIds.length > 0) {
-      const io = getIO();
+    // 3. Find traffic police within 1–2 km of the ambulance → patient route
+    const ambulanceLat = nearestAmbulance.currentLocation.coordinates[1];
+    const ambulanceLng = nearestAmbulance.currentLocation.coordinates[0];
+
+    const onDutyTraffic = await TrafficPolice.find({
+      dutyStatus: DutyStatus.ON_DUTY,
+      'currentLocation.coordinates': { $ne: [0, 0] },
+    }).populate('user', 'fullName username phone');
+
+    const routeTrafficPolice = onDutyTraffic.filter((tp) => {
+      const tpLat = tp.currentLocation.coordinates[1];
+      const tpLng = tp.currentLocation.coordinates[0];
+      return isNearRoute(
+        { lat: tpLat, lng: tpLng },
+        { lat: ambulanceLat, lng: ambulanceLng },
+        { lat: patientLat, lng: patientLng },
+        2 // 2 km buffer
+      );
+    });
+
+    // 4. Update emergency record
+    emergency.assignedAmbulance = nearestAmbulance._id as any;
+    emergency.distanceToAmbulance = Math.round(minAmbulanceDistance * 100) / 100;
+    emergency.assignedTrafficPolice = routeTrafficPolice.map((tp) => tp._id as any);
+
+    if (nearestHospital) {
+      emergency.assignedHospital = nearestHospital._id;
+      emergency.distanceToHospital = Math.round(minHospitalDistance * 100) / 100;
+    }
+
+    emergency.status = EmergencyStatus.AMBULANCE_DISPATCHED;
+    emergency.timeline.push({
+      status: EmergencyStatus.ASSIGNED,
+      timestamp: new Date(),
+      note: `Auto-assigned ambulance ${nearestAmbulance.vehicleNumber} (${emergency.distanceToAmbulance} km away)`,
+      updatedBy: userId as any,
+    });
+    emergency.timeline.push({
+      status: EmergencyStatus.AMBULANCE_DISPATCHED,
+      timestamp: new Date(),
+      note: `Dispatched. ${routeTrafficPolice.length} traffic officer(s) notified on route.${nearestHospital ? ` Hospital: ${nearestHospital.hospitalName}` : ''}`,
+      updatedBy: userId as any,
+    });
+
+    await emergency.save();
+
+    // 5. Mark ambulance as busy
+    nearestAmbulance.ambulanceStatus = AmbulanceStatus.BUSY;
+    nearestAmbulance.currentEmergency = emergency._id as any;
+    await nearestAmbulance.save();
+
+    // 6. Emit real-time notifications
+    const io = getIO();
+
+    // Alert ambulance
+    io.emit('ambulance:alert', {
+      ambulanceId: nearestAmbulance._id,
+      emergency: {
+        id: emergency._id,
+        location: { lat: patientLat, lng: patientLng },
+        patientCondition: emergency.patientCondition,
+        address: emergency.location.address,
+        patientName: emergency.patientName,
+        callerPhone: emergency.callerPhone,
+      },
+    });
+
+    // Alert hospital
+    if (nearestHospital) {
+      io.emit('hospital:incoming', {
+        hospitalId: nearestHospital._id,
+        emergency: {
+          id: emergency._id,
+          patientName: emergency.patientName,
+          patientCondition: emergency.patientCondition,
+          description: emergency.description,
+          callerPhone: emergency.callerPhone,
+          ambulanceVehicle: nearestAmbulance.vehicleNumber,
+          estimatedDistance: emergency.distanceToHospital,
+        },
+      });
+    }
+
+    // Alert only route-relevant traffic police + share ambulance live location
+    if (routeTrafficPolice.length > 0) {
       io.emit('traffic:route-alert', {
         emergencyId: emergency._id,
-        trafficPoliceIds: data.trafficPoliceIds,
-        message: 'Ambulance dispatched - clear route',
-        location: { lat: data.latitude, lng: data.longitude },
+        trafficPoliceIds: routeTrafficPolice.map((tp) => tp._id),
+        message: 'Ambulance dispatched — clear route',
+        ambulanceId: nearestAmbulance._id,
+        ambulanceLocation: { lat: ambulanceLat, lng: ambulanceLng },
+        patientLocation: { lat: patientLat, lng: patientLng },
+        hospitalLocation: nearestHospital
+          ? { lat: nearestHospital.location.coordinates[1], lng: nearestHospital.location.coordinates[0] }
+          : null,
       });
     }
 
@@ -114,7 +302,7 @@ export class EmergencyService {
           $near: {
             $geometry: {
               type: 'Point',
-              coordinates: [data.longitude, data.latitude],
+              coordinates: [patientLng, patientLat],
             },
             $maxDistance: 5000,
           },
@@ -123,7 +311,8 @@ export class EmergencyService {
 
       if (nearbyVolunteers.length > 0) {
         emergency.activatedVolunteers = nearbyVolunteers.map((v) => v._id as any);
-        const io = getIO();
+        await emergency.save();
+
         io.emit('volunteer:activate', {
           emergencyId: emergency._id,
           volunteers: nearbyVolunteers.map((v) => ({
@@ -137,8 +326,30 @@ export class EmergencyService {
       // Geospatial index may not work if no volunteers have coordinates
     }
 
-    await emergency.save();
-    return emergency;
+    // Broadcast emergency dispatched
+    io.emit('emergency:dispatched', {
+      emergencyId: emergency._id,
+      ambulance: {
+        id: nearestAmbulance._id,
+        vehicleNumber: nearestAmbulance.vehicleNumber,
+        driverName: nearestAmbulance.driverName,
+        distance: emergency.distanceToAmbulance,
+      },
+      hospital: nearestHospital
+        ? {
+            id: nearestHospital._id,
+            name: nearestHospital.hospitalName,
+            distance: emergency.distanceToHospital,
+          }
+        : null,
+      trafficPoliceCount: routeTrafficPolice.length,
+    });
+
+    return emergency.populate([
+      { path: 'assignedAmbulance', populate: { path: 'user', select: 'fullName phone' } },
+      { path: 'assignedHospital' },
+      { path: 'assignedTrafficPolice', populate: { path: 'user', select: 'fullName phone' } },
+    ]);
   }
 
   async getAll(filters?: { status?: EmergencyStatus }) {

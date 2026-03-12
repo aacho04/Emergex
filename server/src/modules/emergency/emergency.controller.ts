@@ -4,16 +4,21 @@ import { z } from 'zod';
 import { PatientCondition, EmergencyStatus } from '../../constants/roles';
 
 const createEmergencySchema = z.object({
-  callerPhone: z.string().optional(),
+  callerPhone: z.string().min(1, 'Caller phone is required'),
   patientName: z.string().optional(),
-  patientCondition: z.nativeEnum(PatientCondition),
+  patientCondition: z.nativeEnum(PatientCondition).optional(),
   description: z.string().optional(),
+});
+
+const setLocationSchema = z.object({
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   address: z.string().optional(),
-  ambulanceId: z.string().optional(),
-  trafficPoliceIds: z.array(z.string()).optional(),
-  hospitalId: z.string().optional(),
+});
+
+const receiveLocationSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
 });
 
 export class EmergencyController {
@@ -30,6 +35,56 @@ export class EmergencyController {
       if (error.name === 'ZodError') {
         return res.status(400).json({ success: false, errors: error.errors });
       }
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  async sendLocationSMS(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      const result = await emergencyService.sendLocationSMS(id, clientUrl);
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  async receiveLocation(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { token } = req.params;
+      const { latitude, longitude } = receiveLocationSchema.parse(req.body);
+      const emergency = await emergencyService.receiveLocationFromLink(token, latitude, longitude);
+      res.json({ success: true, message: 'Location received successfully' });
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ success: false, errors: error.errors });
+      }
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  async setManualLocation(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { latitude, longitude, address } = setLocationSchema.parse(req.body);
+      const emergency = await emergencyService.setManualLocation(id, latitude, longitude, address);
+      res.json({ success: true, data: emergency });
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ success: false, errors: error.errors });
+      }
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  async dispatch(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const userId = (req as any).user.id;
+      const emergency = await emergencyService.dispatch(id, userId);
+      res.json({ success: true, data: emergency });
+    } catch (error: any) {
       res.status(400).json({ success: false, message: error.message });
     }
   }
