@@ -13,6 +13,20 @@ export default function EmergenciesPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
 
+  const matchesFilter = (emergency: any, value: string) => {
+    if (value === 'all') return true;
+    if (value === 'active') {
+      return !['completed', 'cancelled'].includes(emergency.status);
+    }
+    if (value === 'picked_up') {
+      return emergency.status === 'patient_picked_up';
+    }
+    if (value === 'en_route') {
+      return emergency.status === 'en_route_hospital';
+    }
+    return emergency.status === value;
+  };
+
   const fetchEmergencies = async () => {
     try {
       const res = await emergencyAPI.getAll();
@@ -23,7 +37,7 @@ export default function EmergenciesPage() {
 
   useEffect(() => { fetchEmergencies(); }, []);
 
-  const filtered = filter === 'all' ? emergencies : emergencies.filter((e: any) => e.status === filter);
+  const filtered = emergencies.filter((e: any) => matchesFilter(e, filter));
 
   if (loading) return <PageLoader />;
 
@@ -75,8 +89,8 @@ export default function EmergenciesPage() {
                     <td className="py-3 px-4"><Badge status={e.patientCondition} /></td>
                     <td className="py-3 px-4"><Badge status={e.status} /></td>
                     <td className="py-3 px-4 text-sm text-gray-600">{e.assignedAmbulance?.vehicleNumber || '-'}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600">{e.assignedHospital?.name || '-'}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600">{e.createdBy?.fullName || '-'}</td>
+                    <td className="py-3 px-4 text-sm text-gray-600">{e.assignedHospital?.hospitalName || e.assignedHospital?.name || '-'}</td>
+                    <td className="py-3 px-4 text-sm text-gray-600">{e.assignedBy?.fullName || '-'}</td>
                     <td className="py-3 px-4">
                       <div className="text-sm text-gray-600">{formatDate(e.createdAt)}</div>
                       <div className="text-xs text-gray-400">{formatTime(e.createdAt)}</div>

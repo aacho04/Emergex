@@ -80,10 +80,10 @@ export default function TrafficPolicePage() {
               ) : (
                 officers.map((tp: any) => (
                   <tr key={tp._id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                    <td className="py-3 px-4 text-sm font-medium text-gray-900">{tp.userId?.fullName || tp.fullName}</td>
+                    <td className="py-3 px-4 text-sm font-medium text-gray-900">{tp.user?.fullName || tp.fullName}</td>
                     <td className="py-3 px-4 text-sm text-gray-600">{tp.badgeNumber}</td>
                     <td className="py-3 px-4 text-sm text-gray-600">{tp.assignedArea}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600">{tp.userId?.phone || tp.phone}</td>
+                    <td className="py-3 px-4 text-sm text-gray-600">{tp.user?.phone || tp.phone}</td>
                     <td className="py-3 px-4"><Badge status={tp.dutyStatus} /></td>
                   </tr>
                 ))

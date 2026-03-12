@@ -27,7 +27,7 @@ export class UserService {
   }
 
   async getERSOfficers() {
-    return User.find({ role: UserRole.ERS_OFFICER, isActive: true }).select(
+    return User.find({ role: UserRole.ERS_OFFICER }).select(
       '-password -emailVerificationToken'
     );
   }
