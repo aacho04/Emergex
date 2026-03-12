@@ -42,7 +42,7 @@ export default function LoginPage() {
       )}
 
       {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 text-white items-center justify-center p-12">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 text-white items-center justify-center p-12 sticky top-0 h-screen">
         <div className="max-w-md">
           <div className="flex items-center gap-3 mb-8">
             <div className="bg-white/10 p-2.5 rounded-xl backdrop-blur-sm">
