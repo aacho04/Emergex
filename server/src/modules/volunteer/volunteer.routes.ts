@@ -12,7 +12,16 @@ router.post('/register', volunteerController.register);
 // Protected routes
 router.get('/', authMiddleware, volunteerController.getAll);
 router.get('/nearby', authMiddleware, volunteerController.getNearby);
+router.get('/leaderboard', authMiddleware, volunteerController.getLeaderboard);
 router.get('/:id', authMiddleware, volunteerController.getById);
+
+// Volunteer actions
+router.post('/:id/accept', volunteerController.acceptEmergency);
+router.post('/:id/complete', volunteerController.completeAssist);
+router.patch('/:id/location', volunteerController.updateLocation);
+router.get('/:id/nearby-ambulances', volunteerController.getNearbyAmbulances);
+
+// Hospital rates volunteer
 router.post(
   '/:id/rate',
   authMiddleware,

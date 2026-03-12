@@ -120,6 +120,9 @@ export interface Volunteer {
   medicalLicenseNumber?: string;
   medicalStudentCollegeId?: string;
   isAvailable: boolean;
+  rewardPoints: number;
+  emergenciesAssisted: number;
+  currentEmergency?: string;
   averageRating: number;
   totalRatings: number;
   ratings: Array<{

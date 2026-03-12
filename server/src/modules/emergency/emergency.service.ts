@@ -250,7 +250,7 @@ export class EmergencyService {
     // 6. Emit real-time notifications
     const io = getIO();
 
-    // Alert ambulance
+    // Alert ambulance with full navigation data (2-phase: ambulance→patient, then ambulance→hospital)
     io.emit('ambulance:alert', {
       ambulanceId: nearestAmbulance._id,
       emergency: {
@@ -261,6 +261,15 @@ export class EmergencyService {
         patientName: emergency.patientName,
         callerPhone: emergency.callerPhone,
       },
+      hospital: nearestHospital ? {
+        id: nearestHospital._id,
+        name: nearestHospital.hospitalName,
+        location: {
+          lat: nearestHospital.location.coordinates[1],
+          lng: nearestHospital.location.coordinates[0],
+        },
+      } : null,
+      ambulanceLocation: { lat: ambulanceLat, lng: ambulanceLng },
     });
 
     // Alert hospital
@@ -294,7 +303,7 @@ export class EmergencyService {
       });
     }
 
-    // Activate nearby volunteers
+    // Activate nearby volunteers with rich data (Uber-like)
     try {
       const nearbyVolunteers = await Volunteer.find({
         isAvailable: true,
@@ -307,20 +316,64 @@ export class EmergencyService {
             $maxDistance: 5000,
           },
         },
-      }).limit(5);
+      }).limit(10);
 
       if (nearbyVolunteers.length > 0) {
         emergency.activatedVolunteers = nearbyVolunteers.map((v) => v._id as any);
         await emergency.save();
 
-        io.emit('volunteer:activate', {
-          emergencyId: emergency._id,
-          volunteers: nearbyVolunteers.map((v) => ({
-            id: v._id,
-            name: v.name,
-            phone: v.phone,
-          })),
-        });
+        // Gather nearby ambulance positions for Uber-like display
+        const nearbyAmbulancesForVolunteers = availableAmbulances
+          .map((amb) => ({
+            id: amb._id,
+            vehicleNumber: amb.vehicleNumber,
+            driverName: amb.driverName,
+            location: {
+              lat: amb.currentLocation.coordinates[1],
+              lng: amb.currentLocation.coordinates[0],
+            },
+            distance: calculateDistance(
+              patientLat, patientLng,
+              amb.currentLocation.coordinates[1],
+              amb.currentLocation.coordinates[0]
+            ),
+          }))
+          .filter((a) => a.distance <= 10)
+          .sort((a, b) => a.distance - b.distance)
+          .slice(0, 5);
+
+        // Send rich notification to each volunteer
+        for (const vol of nearbyVolunteers) {
+          io.emit('volunteer:emergency-alert', {
+            emergencyId: emergency._id,
+            volunteerId: vol._id,
+            patient: {
+              name: emergency.patientName,
+              condition: emergency.patientCondition,
+              location: { lat: patientLat, lng: patientLng },
+              address: emergency.location.address,
+              callerPhone: emergency.callerPhone,
+            },
+            assignedAmbulance: {
+              id: nearestAmbulance._id,
+              vehicleNumber: nearestAmbulance.vehicleNumber,
+              driverName: nearestAmbulance.driverName,
+              location: {
+                lat: ambulanceLat,
+                lng: ambulanceLng,
+              },
+              distance: emergency.distanceToAmbulance,
+            },
+            hospital: nearestHospital ? {
+              name: nearestHospital.hospitalName,
+              location: {
+                lat: nearestHospital.location.coordinates[1],
+                lng: nearestHospital.location.coordinates[0],
+              },
+            } : null,
+            nearbyAmbulances: nearbyAmbulancesForVolunteers,
+          });
+        }
       }
     } catch (err) {
       // Geospatial index may not work if no volunteers have coordinates

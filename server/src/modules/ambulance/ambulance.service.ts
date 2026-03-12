@@ -1,8 +1,12 @@
 import Ambulance, { IAmbulance } from './ambulance.model';
 import Emergency from '../emergency/emergency.model';
+import Hospital from '../hospital/hospital.model';
+import TrafficPolice from '../traffic-police/traffic.model';
+import Volunteer from '../volunteer/volunteer.model';
 import { AmbulanceStatus, DutyStatus, EmergencyStatus } from '../../constants/roles';
 import { getIO } from '../../config/socket';
 import { calculateDistance } from '../../utils/distanceCalculator';
+import { isNearRoute } from '../../utils/routeHelper';
 
 export class AmbulanceService {
   async getAll() {
@@ -97,7 +101,7 @@ export class AmbulanceService {
     switch (status) {
       case 'picked_up':
         if (ambulance.currentEmergency) {
-          await Emergency.findByIdAndUpdate(ambulance.currentEmergency, {
+          const emergency = await Emergency.findByIdAndUpdate(ambulance.currentEmergency, {
             status: EmergencyStatus.PATIENT_PICKED_UP,
             $push: {
               timeline: {
@@ -106,11 +110,82 @@ export class AmbulanceService {
                 note: 'Patient picked up by ambulance',
               },
             },
-          });
+          }, { new: true }).populate('assignedHospital');
+
           io.emit('emergency:status', {
             emergencyId: ambulance.currentEmergency,
             status: EmergencyStatus.PATIENT_PICKED_UP,
           });
+
+          // Phase 2: Ambulance → Hospital navigation
+          if (emergency?.assignedHospital) {
+            const hospital = emergency.assignedHospital as any;
+            const hospitalLat = hospital.location.coordinates[1];
+            const hospitalLng = hospital.location.coordinates[0];
+            const ambLat = ambulance.currentLocation.coordinates[1];
+            const ambLng = ambulance.currentLocation.coordinates[0];
+
+            // Emit phase change so all live tracking maps switch to hospital route
+            io.emit('ambulance:phase-update', {
+              emergencyId: ambulance.currentEmergency,
+              ambulanceId: ambulance._id,
+              phase: 'to_hospital',
+              destination: { lat: hospitalLat, lng: hospitalLng },
+              hospital: {
+                name: hospital.hospitalName,
+                location: { lat: hospitalLat, lng: hospitalLng },
+              },
+            });
+
+            // Re-alert traffic police along ambulance → hospital route
+            try {
+              const onDutyTraffic = await TrafficPolice.find({
+                dutyStatus: DutyStatus.ON_DUTY,
+                'currentLocation.coordinates': { $ne: [0, 0] },
+              }).populate('user', 'fullName phone');
+
+              const routeTraffic = onDutyTraffic.filter((tp) => {
+                const tpLat = tp.currentLocation.coordinates[1];
+                const tpLng = tp.currentLocation.coordinates[0];
+                return isNearRoute(
+                  { lat: tpLat, lng: tpLng },
+                  { lat: ambLat, lng: ambLng },
+                  { lat: hospitalLat, lng: hospitalLng },
+                  2
+                );
+              });
+
+              if (routeTraffic.length > 0) {
+                io.emit('traffic:route-alert', {
+                  emergencyId: emergency._id,
+                  trafficPoliceIds: routeTraffic.map((tp) => tp._id),
+                  message: 'Ambulance en route to hospital — clear route',
+                  phase: 'to_hospital',
+                  ambulanceId: ambulance._id,
+                  ambulanceLocation: { lat: ambLat, lng: ambLng },
+                  patientLocation: {
+                    lat: emergency.location.coordinates[1],
+                    lng: emergency.location.coordinates[0],
+                  },
+                  hospitalLocation: { lat: hospitalLat, lng: hospitalLng },
+                });
+              }
+            } catch (err) {
+              console.error('Error alerting traffic police for phase 2:', err);
+            }
+
+            // Release volunteers — their assistance is done once patient is picked up
+            try {
+              if (emergency.activatedVolunteers?.length > 0) {
+                await Volunteer.updateMany(
+                  { _id: { $in: emergency.activatedVolunteers } },
+                  { isAvailable: true, $unset: { currentEmergency: 1 } }
+                );
+              }
+            } catch (err) {
+              console.error('Error releasing volunteers:', err);
+            }
+          }
         }
         break;
 
