@@ -17,9 +17,14 @@ import { errorMiddleware, notFoundMiddleware } from './middleware/error.middlewa
 
 const app = express();
 
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CLIENT_URL || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 // CORS - allow all origins
 app.use(cors({
-  origin: true,
+  origin: allowedOrigins.length > 0 ? allowedOrigins : true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -27,7 +32,7 @@ app.use(cors({
 
 // Handle preflight for all routes
 app.options('*', cors({
-  origin: true,
+  origin: allowedOrigins.length > 0 ? allowedOrigins : true,
   credentials: true,
 }));
 
