@@ -1,6 +1,6 @@
 # Emergex - Emergency Response System
 
-Emergency response platform connecting Citizens, ERS Officers, Ambulances, Traffic Police, Hospitals, and Volunteers.
+Emergency response platform connecting Citizens, ERS Officers, Ambulances, Traffic Police, Hospitals, and Volunteers..
 
 ## Tech Stack
 
