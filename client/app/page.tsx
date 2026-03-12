@@ -27,7 +27,7 @@ export default function HomePage() {
   });
 
   const handleSOSClick = () => {
-    window.location.href = 'tel:108';
+    window.location.href = 'tel:8809992949';
   };
 
   const onSubmitVolunteer = async (data: VolunteerFormData) => {
