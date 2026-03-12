@@ -1,6 +1,19 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://emergex.onrender.com';
+const FALLBACK_SOCKET_URL = 'https://emergex.onrender.com';
+
+const resolveSocketUrl = () => {
+  const envBase = process.env.NEXT_PUBLIC_SOCKET_URL || FALLBACK_SOCKET_URL;
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    if (envBase.startsWith(origin)) {
+      return FALLBACK_SOCKET_URL;
+    }
+  }
+  return envBase;
+};
+
+const SOCKET_URL = resolveSocketUrl();
 
 let socket: Socket | null = null;
 
