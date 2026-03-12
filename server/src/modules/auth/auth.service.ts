@@ -26,7 +26,13 @@ const generateToken = (user: IUser): string => {
 
 export class AuthService {
   async login(data: LoginInput) {
-    const user = await User.findOne({ username: data.username, isActive: true });
+    // Normalize identifier to allow case-insensitive username/email login
+    const identifier = data.username.trim().toLowerCase();
+
+    const user = await User.findOne({
+      $or: [{ username: identifier }, { email: identifier }],
+      isActive: true,
+    });
     if (!user) {
       throw new Error('Invalid credentials');
     }
