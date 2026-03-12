@@ -7,7 +7,11 @@ let io: Server;
 export const initSocket = (httpServer: HTTPServer): Server => {
   io = new Server(httpServer, {
     cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:3000',
+      origin: [
+        process.env.CLIENT_URL || 'http://localhost:3000',
+        'https://emergex-six.vercel.app',
+        'http://localhost:3000',
+      ],
       methods: ['GET', 'POST'],
       credentials: true,
     },

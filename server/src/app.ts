@@ -3,7 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 
 // Load environment variables
-dotenv.config({ path: '../.env' });
+dotenv.config(); // loads .env in current dir (for Render)
+dotenv.config({ path: '../.env' }); // loads parent .env (for local dev)
 
 import authRoutes from './modules/auth/auth.routes';
 import userRoutes from './modules/users/user.routes';
@@ -17,8 +18,21 @@ import { errorMiddleware, notFoundMiddleware } from './middleware/error.middlewa
 const app = express();
 
 // Middleware
+const allowedOrigins = [
+  process.env.CLIENT_URL || 'http://localhost:3000',
+  'https://emergex-six.vercel.app',
+  'http://localhost:3000',
+];
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, true); // Allow all in dev; restrict further if needed
+  },
   credentials: true,
 }));
 app.use(express.json());
