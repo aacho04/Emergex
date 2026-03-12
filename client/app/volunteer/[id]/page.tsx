@@ -7,7 +7,20 @@ import {
 } from 'lucide-react';
 import LiveTrackingMap, { MapMarker } from '@/components/maps/LiveTrackingMap';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://emergex.onrender.com/api';
+const FALLBACK_API_URL = 'https://emergex.onrender.com/api';
+
+const resolveApiBaseUrl = () => {
+  const envBase = process.env.NEXT_PUBLIC_API_URL || FALLBACK_API_URL;
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    if (envBase.startsWith(origin)) {
+      return FALLBACK_API_URL;
+    }
+  }
+  return envBase;
+};
+
+const API_BASE = resolveApiBaseUrl();
 
 interface NearbyAmbulance {
   _id: string;
