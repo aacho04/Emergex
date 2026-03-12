@@ -409,6 +409,53 @@ export class EmergencyService {
       .sort({ createdAt: -1 });
   }
 
+  /**
+   * Update an existing emergency (ERS can edit recent emergencies).
+   */
+  async updateEmergency(
+    emergencyId: string,
+    userId: string,
+    data: {
+      callerPhone?: string;
+      patientName?: string;
+      patientCondition?: PatientCondition;
+      description?: string;
+    }
+  ) {
+    const emergency = await Emergency.findById(emergencyId);
+    if (!emergency) throw new Error('Emergency not found');
+
+    // Only allow editing emergencies that are not completed/cancelled
+    if (
+      emergency.status === EmergencyStatus.COMPLETED ||
+      emergency.status === EmergencyStatus.CANCELLED
+    ) {
+      throw new Error('Cannot edit a completed or cancelled emergency');
+    }
+
+    if (data.callerPhone !== undefined) emergency.callerPhone = data.callerPhone;
+    if (data.patientName !== undefined) emergency.patientName = data.patientName;
+    if (data.patientCondition !== undefined) emergency.patientCondition = data.patientCondition;
+    if (data.description !== undefined) emergency.description = data.description;
+
+    emergency.timeline.push({
+      status: emergency.status,
+      timestamp: new Date(),
+      note: 'Emergency details updated by ERS',
+      updatedBy: userId as any,
+    });
+
+    await emergency.save();
+
+    const io = getIO();
+    io.emit('emergency:updated', {
+      emergencyId: emergency._id,
+      message: 'Emergency details updated',
+    });
+
+    return emergency;
+  }
+
   async getStats() {
     const [total, pending, active, completed] = await Promise.all([
       Emergency.countDocuments(),

@@ -36,6 +36,12 @@ router.post(
   emergencyController.dispatch
 );
 
+router.put(
+  '/:id',
+  roleMiddleware([UserRole.ERS_OFFICER, UserRole.SUPER_ADMIN]),
+  emergencyController.updateEmergency
+);
+
 router.get('/', emergencyController.getAll);
 router.get('/stats', emergencyController.getStats);
 router.get('/my', emergencyController.getMyEmergencies);

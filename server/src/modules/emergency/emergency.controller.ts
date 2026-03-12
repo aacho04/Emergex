@@ -133,6 +133,27 @@ export class EmergencyController {
     }
   }
 
+  async updateEmergency(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const userId = (req as any).user.id;
+      const updateSchema = z.object({
+        callerPhone: z.string().optional(),
+        patientName: z.string().optional(),
+        patientCondition: z.nativeEnum(PatientCondition).optional(),
+        description: z.string().optional(),
+      });
+      const data = updateSchema.parse(req.body);
+      const emergency = await emergencyService.updateEmergency(id, userId, data);
+      res.json({ success: true, data: emergency });
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ success: false, errors: error.errors });
+      }
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
   async getStats(req: Request, res: Response, next: NextFunction) {
     try {
       const stats = await emergencyService.getStats();
