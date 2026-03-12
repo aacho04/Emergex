@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import Hospital from './hospital.model';
+import Ambulance from '../ambulance/ambulance.model';
 import Emergency from '../emergency/emergency.model';
 import { calculateDistance } from '../../utils/distanceCalculator';
 
@@ -70,6 +71,15 @@ export class HospitalController {
       }
       const userId = (req as any).user.id;
       const hospital = await Hospital.findOneAndUpdate({ user: userId }, req.body, { new: true });
+      if (hospital && req.body?.location?.coordinates?.length === 2) {
+        const [lng, lat] = req.body.location.coordinates;
+        if (lat !== 0 || lng !== 0) {
+          await Ambulance.updateMany(
+            { hospital: hospital._id },
+            { currentLocation: { type: 'Point', coordinates: [lng, lat] } }
+          );
+        }
+      }
       res.json({ success: true, data: hospital });
     } catch (error: any) {
       res.status(400).json({ success: false, message: error.message });

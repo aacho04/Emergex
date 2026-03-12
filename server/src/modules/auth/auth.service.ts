@@ -226,6 +226,11 @@ export class AuthService {
       throw new Error('Username already exists');
     }
 
+    const hospital = await Hospital.findById(data.hospitalId);
+    if (!hospital) {
+      throw new Error('Hospital not found');
+    }
+
     const user = await User.create({
       username: data.username,
       password: data.password,
@@ -236,11 +241,18 @@ export class AuthService {
 
     const ambulance = await Ambulance.create({
       user: user._id,
+      hospital: hospital._id,
       vehicleNumber: data.vehicleNumber,
       driverName: data.driverName,
       driverPhone: data.driverPhone,
       dutyStatus: DutyStatus.OFF_DUTY,
       ambulanceStatus: AmbulanceStatus.OFF_DUTY,
+      currentLocation: {
+        type: 'Point',
+        coordinates: hospital.location?.coordinates?.length
+          ? [hospital.location.coordinates[0], hospital.location.coordinates[1]]
+          : [0, 0],
+      },
     });
 
     return { user, ambulance };

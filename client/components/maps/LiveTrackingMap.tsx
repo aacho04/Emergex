@@ -40,6 +40,8 @@ interface LiveTrackingMapProps {
   height?: string;
   /** Show directions route */
   showDirections?: boolean;
+  /** Show patient to hospital route */
+  showPatientToHospitalRoute?: boolean;
 }
 
 const MARKER_COLORS: Record<string, string> = {
@@ -66,6 +68,7 @@ export default function LiveTrackingMap({
   extraMarkers = [],
   height = '450px',
   showDirections = true,
+  showPatientToHospitalRoute = false,
 }: LiveTrackingMapProps) {
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
@@ -74,6 +77,7 @@ export default function LiveTrackingMap({
 
   const mapRef = useRef<google.maps.Map | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
+  const [patientToHospitalDirections, setPatientToHospitalDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
   const [eta, setEta] = useState<string>('');
   const [distance, setDistance] = useState<string>('');
@@ -112,6 +116,27 @@ export default function LiveTrackingMap({
       }
     );
   }, [isLoaded, showDirections, ambulancePosition, patientPosition, hospitalPosition, phase]);
+
+  useEffect(() => {
+    if (!isLoaded || !showPatientToHospitalRoute || !patientPosition || !hospitalPosition) {
+      setPatientToHospitalDirections(null);
+      return;
+    }
+
+    const directionsService = new google.maps.DirectionsService();
+    directionsService.route(
+      {
+        origin: patientPosition,
+        destination: hospitalPosition,
+        travelMode: google.maps.TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (status === google.maps.DirectionsStatus.OK && result) {
+          setPatientToHospitalDirections(result);
+        }
+      }
+    );
+  }, [isLoaded, showPatientToHospitalRoute, patientPosition, hospitalPosition]);
 
   // Auto-fit bounds when phase changes
   useEffect(() => {
@@ -200,6 +225,20 @@ export default function LiveTrackingMap({
                 strokeColor: phase === 'to_patient' ? '#EF4444' : '#10B981',
                 strokeWeight: 5,
                 strokeOpacity: 0.8,
+              },
+            }}
+          />
+        )}
+
+        {patientToHospitalDirections && (
+          <DirectionsRenderer
+            directions={patientToHospitalDirections}
+            options={{
+              suppressMarkers: true,
+              polylineOptions: {
+                strokeColor: '#2563EB',
+                strokeWeight: 4,
+                strokeOpacity: 0.6,
               },
             }}
           />

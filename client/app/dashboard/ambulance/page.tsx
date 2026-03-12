@@ -7,11 +7,38 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Toast } from '@/components/ui/Toast';
 import { PageLoader } from '@/components/ui/LoadingSpinner';
-import LiveTrackingMap from '@/components/maps/LiveTrackingMap';
+import LiveTrackingMap, { MapMarker } from '@/components/maps/LiveTrackingMap';
 import { ambulanceAPI, emergencyAPI } from '@/services/api';
 import { useSocket } from '@/hooks/useSocket';
 import { useLocationStore } from '@/store/locationStore';
 import { formatDate, formatTime } from '@/utils/helpers';
+import { useDemoAmbulanceSimulation } from '@/hooks/useDemoAmbulanceSimulation';
+
+const DEMO_MODE = true;
+
+const DEMO_HOSPITAL_POSITION = { lat: 18.88991, lng: 73.1665073 };
+const DEMO_PATIENT_POSITION = { lat: 18.8936, lng: 73.1728 };
+const DEMO_AMBULANCE_START = { lat: 18.8893, lng: 73.1656 };
+
+const TRAFFIC_ALERT_POINTS = [
+  {
+    id: 'traffic1',
+    label: 'Rasayani Bridge',
+    position: { lat: 18.890072, lng: 73.171079 },
+  },
+  {
+    id: 'traffic3',
+    label: 'Dand Apta Road',
+    position: { lat: 18.894219, lng: 73.1733 },
+  },
+];
+
+const TRAFFIC_MARKERS: MapMarker[] = TRAFFIC_ALERT_POINTS.map((point) => ({
+  id: point.id,
+  label: point.label,
+  position: point.position,
+  type: 'traffic',
+}));
 
 export default function AmbulanceDashboard() {
   const [profile, setProfile] = useState<any>(null);
@@ -30,6 +57,28 @@ export default function AmbulanceDashboard() {
 
   const { emit, on, off } = useSocket();
   const { latitude, longitude, requestLocation } = useLocationStore();
+
+  const hospitalCoords = profile?.hospital?.location?.coordinates;
+  const associatedHospitalPos = hospitalCoords && (hospitalCoords[0] !== 0 || hospitalCoords[1] !== 0)
+    ? { lat: hospitalCoords[1], lng: hospitalCoords[0] }
+    : null;
+
+  const demoPatientPos = DEMO_MODE ? DEMO_PATIENT_POSITION : patientPos;
+  const demoHospitalPos = DEMO_MODE ? DEMO_HOSPITAL_POSITION : hospitalPos;
+  const demoStartPos = DEMO_MODE ? DEMO_AMBULANCE_START : null;
+
+  const demoSimulation = useDemoAmbulanceSimulation({
+    enabled: DEMO_MODE,
+    startPosition: demoStartPos,
+    patientPosition: demoPatientPos,
+    hospitalPosition: demoHospitalPos,
+    trafficPoints: TRAFFIC_ALERT_POINTS,
+    alertLeadSeconds: 3,
+    onTrafficAlert: (points) => {
+      const labels = points.map((point) => point.label).join(' and ');
+      setToast({ message: `Traffic alert sent to ${labels}`, type: 'success' });
+    },
+  });
 
   const fetchData = useCallback(async () => {
     try {
@@ -116,19 +165,24 @@ export default function AmbulanceDashboard() {
 
   // Share location periodically
   useEffect(() => {
-    if (!latitude || !longitude) return;
+    const activeLat = associatedHospitalPos?.lat ?? latitude;
+    const activeLng = associatedHospitalPos?.lng ?? longitude;
+
+    if (!activeLat || !activeLng) return;
 
     const interval = setInterval(() => {
-      emit('ambulance:update-location', { lat: latitude, lng: longitude });
+      emit('ambulance:update-location', { lat: activeLat, lng: activeLng });
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [latitude, longitude, emit]);
+  }, [latitude, longitude, associatedHospitalPos, emit]);
 
   const toggleDuty = async () => {
     setTogglingDuty(true);
     try {
-      const res = await ambulanceAPI.toggleDuty(latitude ?? undefined, longitude ?? undefined);
+      const activeLat = associatedHospitalPos?.lat ?? latitude ?? undefined;
+      const activeLng = associatedHospitalPos?.lng ?? longitude ?? undefined;
+      const res = await ambulanceAPI.toggleDuty(activeLat, activeLng);
       setProfile(res.data.data);
       setToast({ message: `Duty status: ${res.data.data.dutyStatus}`, type: 'success' });
       fetchData();
@@ -166,7 +220,17 @@ export default function AmbulanceDashboard() {
 
   if (loading) return <PageLoader />;
 
-  const ambulancePos = latitude && longitude ? { lat: latitude, lng: longitude } : null;
+  const ambulancePos = associatedHospitalPos
+    ? associatedHospitalPos
+    : latitude && longitude
+      ? { lat: latitude, lng: longitude }
+      : null;
+  const mapAmbulancePos = DEMO_MODE
+    ? demoSimulation.position || demoStartPos
+    : ambulancePos;
+  const mapPatientPos = DEMO_MODE ? demoPatientPos : patientPos;
+  const mapHospitalPos = DEMO_MODE ? demoHospitalPos : hospitalPos;
+  const mapPhase = DEMO_MODE ? demoSimulation.phase : navPhase;
 
   return (
     <div className="space-y-6">
@@ -188,10 +252,10 @@ export default function AmbulanceDashboard() {
       </div>
 
       {/* Location Status */}
-      {latitude && longitude && (
+      {ambulancePos && (
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800 flex items-center gap-2">
           <Navigation className="h-4 w-4" />
-          Location sharing active: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+          Location sharing active: {ambulancePos.lat.toFixed(4)}, {ambulancePos.lng.toFixed(4)}
         </div>
       )}
 
@@ -280,18 +344,36 @@ export default function AmbulanceDashboard() {
           {/* Live Navigation Map */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Navigation className="h-5 w-5 text-primary-600" />
-                Live Navigation
-              </CardTitle>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <CardTitle className="flex items-center gap-2">
+                  <Navigation className="h-5 w-5 text-primary-600" />
+                  Live Navigation
+                </CardTitle>
+                {DEMO_MODE && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={demoSimulation.isRunning ? 'danger' : 'secondary'}
+                      size="sm"
+                      onClick={demoSimulation.isRunning ? demoSimulation.stop : demoSimulation.start}
+                    >
+                      {demoSimulation.isRunning ? 'Stop Demo' : 'Start Demo'}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={demoSimulation.reset}>
+                      Reset
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <div className="px-6 pb-6">
               <LiveTrackingMap
-                ambulancePosition={ambulancePos}
-                patientPosition={patientPos}
-                hospitalPosition={hospitalPos}
-                phase={navPhase}
+                ambulancePosition={mapAmbulancePos}
+                patientPosition={mapPatientPos}
+                hospitalPosition={mapHospitalPos}
+                phase={mapPhase}
+                extraMarkers={DEMO_MODE ? TRAFFIC_MARKERS : []}
                 showDirections={true}
+                showPatientToHospitalRoute={true}
                 height="400px"
               />
             </div>

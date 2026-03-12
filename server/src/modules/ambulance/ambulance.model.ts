@@ -3,6 +3,7 @@ import { AmbulanceStatus, DutyStatus } from '../../constants/roles';
 
 export interface IAmbulance extends Document {
   user: mongoose.Types.ObjectId;
+  hospital?: mongoose.Types.ObjectId;
   vehicleNumber: string;
   driverName: string;
   driverPhone: string;
@@ -24,6 +25,10 @@ const ambulanceSchema = new Schema<IAmbulance>(
       ref: 'User',
       required: true,
       unique: true,
+    },
+    hospital: {
+      type: Schema.Types.ObjectId,
+      ref: 'Hospital',
     },
     vehicleNumber: {
       type: String,

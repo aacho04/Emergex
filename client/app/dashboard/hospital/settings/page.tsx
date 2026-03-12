@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Toast } from '@/components/ui/Toast';
 import { PageLoader } from '@/components/ui/LoadingSpinner';
+import MapPicker from '@/components/maps/MapPicker';
 import { hospitalAPI } from '@/services/api';
 import { useRouter } from 'next/navigation';
 
@@ -21,6 +22,8 @@ export default function HospitalSettingsPage() {
     hospitalName: '', address: '', phone: '',
     totalBeds: 0, availableBeds: 0,
     specialties: '',
+    latitude: 0,
+    longitude: 0,
   });
 
   useEffect(() => {
@@ -36,6 +39,8 @@ export default function HospitalSettingsPage() {
           totalBeds: h.totalBeds || 0,
           availableBeds: h.availableBeds || 0,
           specialties: (h.specialties || []).join(', '),
+          latitude: h.location?.coordinates?.[1] || 0,
+          longitude: h.location?.coordinates?.[0] || 0,
         });
       } catch (err) { console.error(err); }
       finally { setLoading(false); }
@@ -51,11 +56,16 @@ export default function HospitalSettingsPage() {
     }
     setSaving(true);
     try {
+      const hasValidLocation = Number.isFinite(form.latitude) && Number.isFinite(form.longitude)
+        && form.latitude !== 0 && form.longitude !== 0;
       await hospitalAPI.update({
         ...form,
         totalBeds: Number(form.totalBeds),
         availableBeds: Number(form.availableBeds),
         specialties: form.specialties.split(',').map((s: string) => s.trim()).filter(Boolean),
+        location: hasValidLocation
+          ? { type: 'Point', coordinates: [form.longitude, form.latitude] }
+          : undefined,
       });
       setToast({ message: 'Hospital settings updated', type: 'success' });
       setTimeout(() => router.push('/dashboard/hospital'), 1000);
@@ -117,6 +127,19 @@ export default function HospitalSettingsPage() {
                 onChange={(e) => setForm({ ...form, specialties: e.target.value })}
               />
               <p className="mt-1 text-xs text-gray-400">Separate specialties with commas</p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-700">Hospital Location</p>
+              <p className="text-xs text-gray-400">
+                Search or click on the map to update the hospital location.
+              </p>
+              <MapPicker
+                latitude={form.latitude}
+                longitude={form.longitude}
+                onLocationChange={(lat, lng) => setForm({ ...form, latitude: lat, longitude: lng })}
+                onAddressFound={(address) => setForm({ ...form, address })}
+              />
             </div>
 
             <div className="pt-2">

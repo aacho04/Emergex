@@ -10,15 +10,21 @@ import { isNearRoute } from '../../utils/routeHelper';
 
 export class AmbulanceService {
   async getAll() {
-    return Ambulance.find().populate('user', 'fullName username phone');
+    return Ambulance.find()
+      .populate('user', 'fullName username phone')
+      .populate('hospital', 'hospitalName address location');
   }
 
   async getById(id: string) {
-    return Ambulance.findById(id).populate('user', 'fullName username phone');
+    return Ambulance.findById(id)
+      .populate('user', 'fullName username phone')
+      .populate('hospital', 'hospitalName address location');
   }
 
   async getByUserId(userId: string) {
-    return Ambulance.findOne({ user: userId }).populate('user', 'fullName username phone');
+    return Ambulance.findOne({ user: userId })
+      .populate('user', 'fullName username phone')
+      .populate('hospital', 'hospitalName address location');
   }
 
   async getAvailable() {
@@ -63,11 +69,23 @@ export class AmbulanceService {
     } else {
       ambulance.dutyStatus = DutyStatus.ON_DUTY;
       ambulance.ambulanceStatus = AmbulanceStatus.AVAILABLE;
+      let targetLat = lat;
+      let targetLng = lng;
+
+      if (ambulance.hospital) {
+        const hospital = await Hospital.findById(ambulance.hospital);
+        const coords = hospital?.location?.coordinates;
+        if (coords && (coords[0] !== 0 || coords[1] !== 0)) {
+          targetLat = coords[1];
+          targetLng = coords[0];
+        }
+      }
+
       // Update location when going on duty so the ambulance is immediately discoverable
-      if (lat != null && lng != null && (lat !== 0 || lng !== 0)) {
+      if (targetLat != null && targetLng != null && (targetLat !== 0 || targetLng !== 0)) {
         ambulance.currentLocation = {
           type: 'Point',
-          coordinates: [lng, lat],
+          coordinates: [targetLng, targetLat],
         };
       }
     }
@@ -77,22 +95,32 @@ export class AmbulanceService {
   }
 
   async updateLocation(userId: string, lat: number, lng: number) {
-    const ambulance = await Ambulance.findOneAndUpdate(
-      { user: userId },
-      {
-        currentLocation: {
-          type: 'Point',
-          coordinates: [lng, lat],
-        },
-      },
-      { new: true }
-    );
+    const ambulance = await Ambulance.findOne({ user: userId }).populate('hospital', 'location');
+
+    if (!ambulance) return null;
+
+    let nextLat = lat;
+    let nextLng = lng;
+
+    const hospital = ambulance.hospital as any;
+    const coords = hospital?.location?.coordinates;
+    if (coords && (coords[0] !== 0 || coords[1] !== 0)) {
+      nextLat = coords[1];
+      nextLng = coords[0];
+    }
+
+    ambulance.currentLocation = {
+      type: 'Point',
+      coordinates: [nextLng, nextLat],
+    };
+
+    await ambulance.save();
 
     if (ambulance) {
       const io = getIO();
       io.emit('ambulance:location', {
         ambulanceId: ambulance._id,
-        location: { lat, lng },
+        location: { lat: nextLat, lng: nextLng },
       });
     }
 

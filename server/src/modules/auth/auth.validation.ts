@@ -41,6 +41,7 @@ export const createAmbulanceSchema = z.object({
   vehicleNumber: z.string().min(2),
   driverName: z.string().min(2),
   driverPhone: z.string().min(10),
+  hospitalId: z.string().min(1),
 });
 
 export const createTrafficPoliceSchema = z.object({

@@ -9,13 +9,15 @@ import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
 import { Toast } from '@/components/ui/Toast';
 import { PageLoader } from '@/components/ui/LoadingSpinner';
-import { authAPI, ambulanceAPI } from '@/services/api';
+import { authAPI, ambulanceAPI, hospitalAPI } from '@/services/api';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createAmbulanceSchema, CreateAmbulanceFormData } from '@/utils/validators';
+import { Select } from '@/components/ui/Select';
 
 export default function AmbulancesPage() {
   const [ambulances, setAmbulances] = useState<any[]>([]);
+  const [hospitals, setHospitals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -32,7 +34,17 @@ export default function AmbulancesPage() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchAmbulances(); }, []);
+  const fetchHospitals = async () => {
+    try {
+      const res = await hospitalAPI.getAllAdmin();
+      setHospitals(res.data.data || []);
+    } catch (err) { console.error(err); }
+  };
+
+  useEffect(() => {
+    fetchAmbulances();
+    fetchHospitals();
+  }, []);
 
   const onSubmit = async (data: CreateAmbulanceFormData) => {
     try {
@@ -70,19 +82,21 @@ export default function AmbulancesPage() {
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Vehicle</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Driver</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Phone</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Hospital</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Duty</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Status</th>
               </tr>
             </thead>
             <tbody>
               {ambulances.length === 0 ? (
-                <tr><td colSpan={5} className="py-8 text-center text-sm text-gray-400">No ambulances found</td></tr>
+                <tr><td colSpan={6} className="py-8 text-center text-sm text-gray-400">No ambulances found</td></tr>
               ) : (
                 ambulances.map((amb: any) => (
                   <tr key={amb._id} className="border-b border-gray-50 hover:bg-gray-50/50">
                     <td className="py-3 px-4 text-sm font-medium text-gray-900">{amb.vehicleNumber}</td>
                     <td className="py-3 px-4 text-sm text-gray-600">{amb.driverName}</td>
                     <td className="py-3 px-4 text-sm text-gray-600">{amb.driverPhone}</td>
+                    <td className="py-3 px-4 text-sm text-gray-600">{amb.hospital?.hospitalName || '-'}</td>
                     <td className="py-3 px-4"><Badge status={amb.dutyStatus} /></td>
                     <td className="py-3 px-4"><Badge status={amb.ambulanceStatus} /></td>
                   </tr>
@@ -95,6 +109,16 @@ export default function AmbulancesPage() {
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Add Ambulance">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <Select
+            label="Associated Hospital"
+            placeholder="Select a hospital"
+            error={errors.hospitalId?.message}
+            options={hospitals.map((h) => ({
+              value: h._id,
+              label: h.hospitalName || h.name || 'Hospital',
+            }))}
+            {...register('hospitalId')}
+          />
           <Input label="Full Name" placeholder="Account holder name" error={errors.fullName?.message} {...register('fullName')} />
           <div className="grid grid-cols-2 gap-4">
             <Input label="Username" placeholder="Login username" error={errors.username?.message} {...register('username')} />
