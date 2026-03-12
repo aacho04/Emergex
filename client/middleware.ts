@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const publicPaths = ['/', '/login', '/register-hospital', '/share-location'];
+const publicPaths = ['/', '/login', '/register-hospital', '/share-location', '/volunteer'];
 
 const rolePaths: Record<string, string> = {
   super_admin: '/dashboard/super-admin',

@@ -92,8 +92,17 @@ export const hospitalAPI = {
 export const volunteerAPI = {
   register: (data: any) => api.post('/volunteers/register', data),
   getAll: () => api.get('/volunteers'),
+  getById: (id: string) => api.get(`/volunteers/${id}`),
   getNearby: (lat: number, lng: number) =>
     api.get(`/volunteers/nearby?lat=${lat}&lng=${lng}`),
+  getLeaderboard: () => api.get('/volunteers/leaderboard'),
+  acceptEmergency: (id: string, emergencyId: string) =>
+    api.post(`/volunteers/${id}/accept`, { emergencyId }),
+  completeAssist: (id: string) => api.post(`/volunteers/${id}/complete`),
+  updateLocation: (id: string, latitude: number, longitude: number) =>
+    api.patch(`/volunteers/${id}/location`, { latitude, longitude }),
+  getNearbyAmbulances: (id: string, lat: number, lng: number) =>
+    api.get(`/volunteers/${id}/nearby-ambulances?lat=${lat}&lng=${lng}`),
   rate: (id: string, data: { rating: number; comment?: string }) =>
     api.post(`/volunteers/${id}/rate`, data),
 };

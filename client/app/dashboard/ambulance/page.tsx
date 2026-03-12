@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Power, MapPin, Navigation, AlertTriangle, Truck, Building2, CheckCircle } from 'lucide-react';
+import { Power, Navigation, AlertTriangle, Truck, Building2, CheckCircle, Phone, User } from 'lucide-react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Toast } from '@/components/ui/Toast';
 import { PageLoader } from '@/components/ui/LoadingSpinner';
+import LiveTrackingMap from '@/components/maps/LiveTrackingMap';
 import { ambulanceAPI, emergencyAPI } from '@/services/api';
 import { useSocket } from '@/hooks/useSocket';
 import { useLocationStore } from '@/store/locationStore';
@@ -20,26 +21,59 @@ export default function AmbulanceDashboard() {
   const [togglingDuty, setTogglingDuty] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const { emit } = useSocket();
+
+  // Navigation state
+  const [navPhase, setNavPhase] = useState<'to_patient' | 'to_hospital'>('to_patient');
+  const [patientPos, setPatientPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [hospitalPos, setHospitalPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [incomingAlert, setIncomingAlert] = useState<any>(null);
+
+  const { emit, on, off } = useSocket();
   const { latitude, longitude, requestLocation } = useLocationStore();
 
   const fetchData = useCallback(async () => {
     try {
-      const [profileRes, emergenciesRes] = await Promise.all([
-        ambulanceAPI.getAll(), // We'll filter own profile from list or use a dedicated endpoint
-        emergencyAPI.getMy(),
-      ]);
-      const ambulances = profileRes.data.data || [];
-      // The first ambulance matching our user - backend will handle filtering
-      setMyEmergencies(emergenciesRes.data.data || []);
-      
-      // Find current active emergency
-      const active = (emergenciesRes.data.data || []).find(
-        (e: any) => ['assigned', 'picked_up', 'en_route'].includes(e.status)
+      const emergenciesRes = await emergencyAPI.getMy();
+      const emergencies = emergenciesRes.data.data || [];
+      setMyEmergencies(emergencies);
+
+      const active = emergencies.find(
+        (e: any) => ['assigned', 'ambulance_dispatched', 'patient_picked_up', 'en_route_hospital'].includes(e.status)
       );
-      setCurrentEmergency(active || null);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+      if (active) {
+        setCurrentEmergency(active);
+        // Set navigation positions
+        if (active.location?.coordinates) {
+          setPatientPos({
+            lat: active.location.coordinates[1],
+            lng: active.location.coordinates[0],
+          });
+        }
+        if (active.assignedHospital?.location?.coordinates) {
+          setHospitalPos({
+            lat: active.assignedHospital.location.coordinates[1],
+            lng: active.assignedHospital.location.coordinates[0],
+          });
+        }
+        // Determine which phase
+        if (['patient_picked_up', 'en_route_hospital'].includes(active.status)) {
+          setNavPhase('to_hospital');
+        } else {
+          setNavPhase('to_patient');
+        }
+      } else {
+        setCurrentEmergency(null);
+      }
+
+      try {
+        const profileRes = await ambulanceAPI.getMe();
+        setProfile(profileRes.data.data);
+      } catch {}
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -47,13 +81,46 @@ export default function AmbulanceDashboard() {
     requestLocation();
   }, [fetchData, requestLocation]);
 
+  // Listen for new emergency alerts
+  useEffect(() => {
+    const handleAlert = (data: any) => {
+      setIncomingAlert(data);
+      setToast({ message: 'New emergency assigned!', type: 'success' });
+      if (data.emergency?.location) {
+        setPatientPos(data.emergency.location);
+      }
+      if (data.hospital?.location) {
+        setHospitalPos(data.hospital.location);
+      }
+      setNavPhase('to_patient');
+      fetchData();
+    };
+
+    const handlePhaseUpdate = (data: any) => {
+      if (data.phase === 'to_hospital') {
+        setNavPhase('to_hospital');
+        if (data.hospital?.location) {
+          setHospitalPos(data.hospital.location);
+        }
+      }
+    };
+
+    on('ambulance:alert', handleAlert);
+    on('ambulance:phase-update', handlePhaseUpdate);
+
+    return () => {
+      off('ambulance:alert', handleAlert);
+      off('ambulance:phase-update', handlePhaseUpdate);
+    };
+  }, [on, off, fetchData]);
+
   // Share location periodically
   useEffect(() => {
     if (!latitude || !longitude) return;
-    
+
     const interval = setInterval(() => {
-      emit('ambulance:update-location', { latitude, longitude });
-    }, 10000); // every 10 seconds
+      emit('ambulance:update-location', { lat: latitude, lng: longitude });
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [latitude, longitude, emit]);
@@ -67,7 +134,9 @@ export default function AmbulanceDashboard() {
       fetchData();
     } catch (error: any) {
       setToast({ message: error.response?.data?.message || 'Failed to toggle duty', type: 'error' });
-    } finally { setTogglingDuty(false); }
+    } finally {
+      setTogglingDuty(false);
+    }
   };
 
   const updateStatus = async (status: string) => {
@@ -76,13 +145,28 @@ export default function AmbulanceDashboard() {
     try {
       await ambulanceAPI.updateStatus(status);
       setToast({ message: `Status updated to ${status.replace(/_/g, ' ')}`, type: 'success' });
+
+      if (status === 'picked_up') {
+        setNavPhase('to_hospital');
+        emit('ambulance:phase-change', {
+          emergencyId: currentEmergency._id,
+          phase: 'to_hospital',
+          ambulanceId: profile?._id,
+          destination: hospitalPos,
+        });
+      }
+
       fetchData();
     } catch (error: any) {
       setToast({ message: error.response?.data?.message || 'Failed to update status', type: 'error' });
-    } finally { setUpdatingStatus(false); }
+    } finally {
+      setUpdatingStatus(false);
+    }
   };
 
   if (loading) return <PageLoader />;
+
+  const ambulancePos = latitude && longitude ? { lat: latitude, lng: longitude } : null;
 
   return (
     <div className="space-y-6">
@@ -111,75 +195,108 @@ export default function AmbulanceDashboard() {
         </div>
       )}
 
-      {/* Current Emergency */}
+      {/* Current Emergency with Live Map */}
       {currentEmergency ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-danger-600">
-              <AlertTriangle className="h-5 w-5" />
-              Active Emergency
-            </CardTitle>
-          </CardHeader>
-          <div className="px-6 pb-6 space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-xs text-gray-500 uppercase font-medium">Patient</p>
-                <p className="text-sm font-semibold text-gray-900">{currentEmergency.patientName || 'Unknown'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase font-medium">Condition</p>
-                <Badge status={currentEmergency.patientCondition} />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase font-medium">Status</p>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-danger-600">
+                <AlertTriangle className="h-5 w-5" />
+                Active Emergency
                 <Badge status={currentEmergency.status} />
+              </CardTitle>
+            </CardHeader>
+            <div className="px-6 pb-6 space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium">Patient</p>
+                  <p className="text-sm font-semibold text-gray-900 flex items-center gap-1">
+                    <User className="h-3 w-3" />
+                    {currentEmergency.patientName || 'Unknown'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium">Condition</p>
+                  <Badge status={currentEmergency.patientCondition} />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium">Caller Phone</p>
+                  <p className="text-sm text-gray-900 flex items-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    {currentEmergency.callerPhone || '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium">Hospital</p>
+                  <p className="text-sm text-gray-900 flex items-center gap-1">
+                    <Building2 className="h-3 w-3" />
+                    {currentEmergency.assignedHospital?.hospitalName || 'Not assigned'}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase font-medium">Hospital</p>
-                <p className="text-sm text-gray-900">{currentEmergency.assignedHospital?.name || 'Not assigned'}</p>
+
+              {currentEmergency.description && (
+                <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
+                  {currentEmergency.description}
+                </div>
+              )}
+
+              {/* Status Actions */}
+              <div className="flex items-center gap-3 pt-2">
+                {['assigned', 'ambulance_dispatched'].includes(currentEmergency.status) && (
+                  <Button
+                    onClick={() => updateStatus('picked_up')}
+                    loading={updatingStatus}
+                    variant="primary"
+                    icon={<Truck className="h-4 w-4" />}
+                  >
+                    Patient Picked Up
+                  </Button>
+                )}
+                {currentEmergency.status === 'patient_picked_up' && (
+                  <Button
+                    onClick={() => updateStatus('reached_hospital')}
+                    loading={updatingStatus}
+                    variant="success"
+                    icon={<Building2 className="h-4 w-4" />}
+                  >
+                    Reached Hospital
+                  </Button>
+                )}
+                {currentEmergency.status === 'reached_hospital' && (
+                  <Button
+                    onClick={() => updateStatus('completed')}
+                    loading={updatingStatus}
+                    variant="success"
+                    icon={<CheckCircle className="h-4 w-4" />}
+                  >
+                    Transfer Complete
+                  </Button>
+                )}
               </div>
             </div>
+          </Card>
 
-            {currentEmergency.description && (
-              <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
-                {currentEmergency.description}
-              </div>
-            )}
-
-            <div className="flex items-center gap-3 pt-2">
-              {currentEmergency.status === 'assigned' && (
-                <Button
-                  onClick={() => updateStatus('picked_up')}
-                  loading={updatingStatus}
-                  variant="primary"
-                  icon={<Truck className="h-4 w-4" />}
-                >
-                  Patient Picked Up
-                </Button>
-              )}
-              {currentEmergency.status === 'picked_up' && (
-                <Button
-                  onClick={() => updateStatus('reached_hospital')}
-                  loading={updatingStatus}
-                  variant="success"
-                  icon={<Building2 className="h-4 w-4" />}
-                >
-                  Reached Hospital
-                </Button>
-              )}
-              {currentEmergency.status === 'reached_hospital' && (
-                <Button
-                  onClick={() => updateStatus('completed')}
-                  loading={updatingStatus}
-                  variant="success"
-                  icon={<CheckCircle className="h-4 w-4" />}
-                >
-                  Transfer Complete
-                </Button>
-              )}
+          {/* Live Navigation Map */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Navigation className="h-5 w-5 text-primary-600" />
+                Live Navigation
+              </CardTitle>
+            </CardHeader>
+            <div className="px-6 pb-6">
+              <LiveTrackingMap
+                ambulancePosition={ambulancePos}
+                patientPosition={patientPos}
+                hospitalPosition={hospitalPos}
+                phase={navPhase}
+                showDirections={true}
+                height="400px"
+              />
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       ) : (
         <Card>
           <div className="py-12 text-center">
@@ -215,7 +332,7 @@ export default function AmbulanceDashboard() {
                     <td className="py-3 px-4 text-sm font-medium text-gray-900">{e.patientName || 'Unknown'}</td>
                     <td className="py-3 px-4"><Badge status={e.patientCondition} /></td>
                     <td className="py-3 px-4"><Badge status={e.status} /></td>
-                    <td className="py-3 px-4 text-sm text-gray-600">{e.assignedHospital?.name || '-'}</td>
+                    <td className="py-3 px-4 text-sm text-gray-600">{e.assignedHospital?.hospitalName || '-'}</td>
                     <td className="py-3 px-4">
                       <div className="text-sm text-gray-600">{formatDate(e.createdAt)}</div>
                       <div className="text-xs text-gray-400">{formatTime(e.createdAt)}</div>

@@ -11,6 +11,9 @@ export interface IVolunteer extends Document {
     coordinates: [number, number];
   };
   isAvailable: boolean;
+  rewardPoints: number;
+  emergenciesAssisted: number;
+  currentEmergency?: mongoose.Types.ObjectId;
   averageRating: number;
   totalRatings: number;
   ratings: Array<{
@@ -62,6 +65,20 @@ const volunteerSchema = new Schema<IVolunteer>(
     isAvailable: {
       type: Boolean,
       default: true,
+    },
+    rewardPoints: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    emergenciesAssisted: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    currentEmergency: {
+      type: Schema.Types.ObjectId,
+      ref: 'Emergency',
     },
     averageRating: {
       type: Number,
