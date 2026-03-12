@@ -12,6 +12,7 @@ router.get('/', hospitalController.getAll);
 router.get('/nearby', hospitalController.getNearby);
 router.get('/me', roleMiddleware([UserRole.HOSPITAL]), hospitalController.getMyHospital);
 router.put('/me', roleMiddleware([UserRole.HOSPITAL]), hospitalController.update);
+router.get('/me/emergencies', roleMiddleware([UserRole.HOSPITAL]), hospitalController.getMyEmergencies);
 
 router.get(
   '/admin/all',

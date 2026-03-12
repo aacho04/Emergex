@@ -57,7 +57,16 @@ export default function TrafficPoliceDashboard() {
         ...data,
         timestamp: Date.now(),
       };
-      setAlerts((prev) => [alert, ...prev]);
+      // Replace existing alert for same emergency, or prepend
+      setAlerts((prev) => {
+        const idx = prev.findIndex((a) => a.emergencyId === data.emergencyId);
+        if (idx !== -1) {
+          const updated = [...prev];
+          updated[idx] = alert;
+          return updated;
+        }
+        return [alert, ...prev];
+      });
       setToast({ message: 'New route clearance alert received!', type: 'success' });
 
       // Track ambulance position from the alert
@@ -223,7 +232,34 @@ export default function TrafficPoliceDashboard() {
               Live Ambulance Route
             </CardTitle>
           </CardHeader>
-          <div className="px-6 pb-6">
+          <div className="px-6 pb-6 space-y-4">
+            {/* Coordinate info panel */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {activeAmbulancePos && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-xs font-semibold text-red-700 uppercase mb-1">🚑 Ambulance Location</p>
+                  <p className="text-xs text-gray-700 font-mono">
+                    {activeAmbulancePos.lat.toFixed(5)}, {activeAmbulancePos.lng.toFixed(5)}
+                  </p>
+                </div>
+              )}
+              {activeAlert.patientLocation && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-xs font-semibold text-amber-700 uppercase mb-1">🧑 Patient Location</p>
+                  <p className="text-xs text-gray-700 font-mono">
+                    {activeAlert.patientLocation.lat.toFixed(5)}, {activeAlert.patientLocation.lng.toFixed(5)}
+                  </p>
+                </div>
+              )}
+              {activeAlert.hospitalLocation && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-xs font-semibold text-green-700 uppercase mb-1">🏥 Hospital Location</p>
+                  <p className="text-xs text-gray-700 font-mono">
+                    {activeAlert.hospitalLocation.lat.toFixed(5)}, {activeAlert.hospitalLocation.lng.toFixed(5)}
+                  </p>
+                </div>
+              )}
+            </div>
             <LiveTrackingMap
               ambulancePosition={activeAmbulancePos}
               patientPosition={activeAlert.patientLocation || null}

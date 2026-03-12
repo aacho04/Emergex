@@ -70,7 +70,8 @@ export const ambulanceAPI = {
   getNearby: (lat: number, lng: number) =>
     api.get(`/ambulances/nearby?lat=${lat}&lng=${lng}`),
   getMe: () => api.get('/ambulances/me'),
-  toggleDuty: () => api.patch('/ambulances/toggle-duty'),
+  toggleDuty: (lat?: number, lng?: number) =>
+    api.patch('/ambulances/toggle-duty', { lat, lng }),
   updateLocation: (lat: number, lng: number) =>
     api.patch('/ambulances/location', { lat, lng }),
   updateStatus: (status: string, data?: any) =>
@@ -83,6 +84,7 @@ export const hospitalAPI = {
   getNearby: (lat: number, lng: number) =>
     api.get(`/hospitals/nearby?lat=${lat}&lng=${lng}`),
   getMe: () => api.get('/hospitals/me'),
+  getMyEmergencies: () => api.get('/hospitals/me/emergencies'),
   update: (data: any) => api.put('/hospitals/me', data),
   getAllAdmin: () => api.get('/hospitals/admin/all'),
   verify: (id: string) => api.patch(`/hospitals/${id}/verify`),

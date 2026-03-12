@@ -52,7 +52,8 @@ export class AmbulanceController {
   async toggleDuty(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).user.id;
-      const ambulance = await ambulanceService.toggleDuty(userId);
+      const { lat, lng } = req.body || {};
+      const ambulance = await ambulanceService.toggleDuty(userId, lat, lng);
       res.json({ success: true, data: ambulance });
     } catch (error: any) {
       res.status(400).json({ success: false, message: error.message });

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import Hospital from './hospital.model';
+import Emergency from '../emergency/emergency.model';
 import { calculateDistance } from '../../utils/distanceCalculator';
 
 export class HospitalController {
@@ -117,6 +118,26 @@ export class HospitalController {
       res.json({ success: true, data: hospital });
     } catch (error: any) {
       res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  async getMyEmergencies(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user.id;
+      const hospital = await Hospital.findOne({ user: userId });
+      if (!hospital) {
+        return res.status(404).json({ success: false, message: 'Hospital not found' });
+      }
+      const emergencies = await Emergency.find({ assignedHospital: hospital._id })
+        .populate({
+          path: 'assignedAmbulance',
+          populate: { path: 'user', select: 'fullName phone' },
+        })
+        .sort({ createdAt: -1 })
+        .limit(50);
+      res.json({ success: true, data: emergencies });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
     }
   }
 }

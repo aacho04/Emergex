@@ -53,7 +53,7 @@ export class AmbulanceService {
     }).sort((a, b) => a.distanceToPatient - b.distanceToPatient);
   }
 
-  async toggleDuty(userId: string) {
+  async toggleDuty(userId: string, lat?: number, lng?: number) {
     const ambulance = await Ambulance.findOne({ user: userId });
     if (!ambulance) throw new Error('Ambulance not found');
 
@@ -63,6 +63,13 @@ export class AmbulanceService {
     } else {
       ambulance.dutyStatus = DutyStatus.ON_DUTY;
       ambulance.ambulanceStatus = AmbulanceStatus.AVAILABLE;
+      // Update location when going on duty so the ambulance is immediately discoverable
+      if (lat != null && lng != null && (lat !== 0 || lng !== 0)) {
+        ambulance.currentLocation = {
+          type: 'Point',
+          coordinates: [lng, lat],
+        };
+      }
     }
 
     await ambulance.save();
@@ -124,6 +131,8 @@ export class AmbulanceService {
             const hospitalLng = hospital.location.coordinates[0];
             const ambLat = ambulance.currentLocation.coordinates[1];
             const ambLng = ambulance.currentLocation.coordinates[0];
+            const patientLat = emergency.location.coordinates[1];
+            const patientLng = emergency.location.coordinates[0];
 
             // Emit phase change so all live tracking maps switch to hospital route
             io.emit('ambulance:phase-update', {
@@ -131,6 +140,9 @@ export class AmbulanceService {
               ambulanceId: ambulance._id,
               phase: 'to_hospital',
               destination: { lat: hospitalLat, lng: hospitalLng },
+              ambulanceLocation: { lat: ambLat, lng: ambLng },
+              patientLocation: { lat: patientLat, lng: patientLng },
+              hospitalLocation: { lat: hospitalLat, lng: hospitalLng },
               hospital: {
                 name: hospital.hospitalName,
                 location: { lat: hospitalLat, lng: hospitalLng },
@@ -189,29 +201,32 @@ export class AmbulanceService {
         }
         break;
 
-      case 'reached_hospital':
+      case 'reached_hospital': {
+        // Capture the emergency ID before clearing it from the ambulance record
+        const reachedEmergencyId = data?.emergencyId || ambulance.currentEmergency;
         ambulance.ambulanceStatus = AmbulanceStatus.AVAILABLE;
         ambulance.currentEmergency = undefined;
         await ambulance.save();
 
-        if (data?.emergencyId) {
-          await Emergency.findByIdAndUpdate(data.emergencyId, {
+        if (reachedEmergencyId) {
+          await Emergency.findByIdAndUpdate(reachedEmergencyId, {
             status: EmergencyStatus.REACHED_HOSPITAL,
             completedAt: new Date(),
             $push: {
               timeline: {
                 status: EmergencyStatus.REACHED_HOSPITAL,
                 timestamp: new Date(),
-                note: 'Reached hospital',
+                note: 'Ambulance reached hospital with patient',
               },
             },
           });
           io.emit('emergency:status', {
-            emergencyId: data.emergencyId,
+            emergencyId: reachedEmergencyId,
             status: EmergencyStatus.REACHED_HOSPITAL,
           });
         }
         break;
+      }
 
       case 'transfer':
         if (data?.newHospitalId && data?.emergencyId) {

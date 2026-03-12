@@ -150,15 +150,22 @@ export class EmergencyService {
     const patientLng = emergency.location.coordinates[0];
 
     // 1. Find nearest available ambulance
-    const availableAmbulances = await Ambulance.find({
+    const allAvailableAmbulances = await Ambulance.find({
       dutyStatus: DutyStatus.ON_DUTY,
       ambulanceStatus: AmbulanceStatus.AVAILABLE,
-      'currentLocation.coordinates': { $ne: [0, 0] },
     }).populate('user', 'fullName username phone');
 
-    if (availableAmbulances.length === 0) {
+    if (allAvailableAmbulances.length === 0) {
       throw new Error('No available ambulances found');
     }
+
+    // Prefer ambulances with a known location, fall back to any available
+    const withLocation = allAvailableAmbulances.filter(
+      (amb) =>
+        amb.currentLocation?.coordinates &&
+        (amb.currentLocation.coordinates[0] !== 0 || amb.currentLocation.coordinates[1] !== 0)
+    );
+    const availableAmbulances = withLocation.length > 0 ? withLocation : allAvailableAmbulances;
 
     let nearestAmbulance = availableAmbulances[0];
     let minAmbulanceDistance = Infinity;
@@ -276,6 +283,11 @@ export class EmergencyService {
     if (nearestHospital) {
       io.emit('hospital:incoming', {
         hospitalId: nearestHospital._id,
+        emergencyId: emergency._id,
+        ambulanceId: nearestAmbulance._id,
+        ambulanceLocation: { lat: ambulanceLat, lng: ambulanceLng },
+        patientLocation: { lat: patientLat, lng: patientLng },
+        hospitalLocation: { lat: nearestHospital.location.coordinates[1], lng: nearestHospital.location.coordinates[0] },
         emergency: {
           id: emergency._id,
           patientName: emergency.patientName,
@@ -460,6 +472,18 @@ export class EmergencyService {
         populate: { path: 'user', select: 'fullName phone' },
       })
       .sort({ createdAt: -1 });
+  }
+
+  async getByHospital(hospitalId: string) {
+    return Emergency.find({
+      assignedHospital: hospitalId,
+    })
+      .populate({
+        path: 'assignedAmbulance',
+        populate: { path: 'user', select: 'fullName phone' },
+      })
+      .sort({ createdAt: -1 })
+      .limit(50);
   }
 
   /**

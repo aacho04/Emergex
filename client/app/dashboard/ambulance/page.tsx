@@ -128,7 +128,7 @@ export default function AmbulanceDashboard() {
   const toggleDuty = async () => {
     setTogglingDuty(true);
     try {
-      const res = await ambulanceAPI.toggleDuty();
+      const res = await ambulanceAPI.toggleDuty(latitude ?? undefined, longitude ?? undefined);
       setProfile(res.data.data);
       setToast({ message: `Duty status: ${res.data.data.dutyStatus}`, type: 'success' });
       fetchData();
@@ -143,7 +143,7 @@ export default function AmbulanceDashboard() {
     if (!currentEmergency) return;
     setUpdatingStatus(true);
     try {
-      await ambulanceAPI.updateStatus(status);
+      await ambulanceAPI.updateStatus(status, { emergencyId: currentEmergency._id });
       setToast({ message: `Status updated to ${status.replace(/_/g, ' ')}`, type: 'success' });
 
       if (status === 'picked_up') {
