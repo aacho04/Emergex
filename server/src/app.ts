@@ -17,23 +17,12 @@ import { errorMiddleware, notFoundMiddleware } from './middleware/error.middlewa
 
 const app = express();
 
-// Middleware
-const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:3000',
-  'https://emergex-six.vercel.app',
-  'http://localhost:3000',
-];
-
+// CORS - allow Vercel frontend + localhost
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(null, true); // Allow all in dev; restrict further if needed
-  },
+  origin: true, // reflects the request origin — allows all origins with credentials
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
