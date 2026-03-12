@@ -1,18 +1,45 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Building2, CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, Plus, XCircle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Toast } from '@/components/ui/Toast';
 import { PageLoader } from '@/components/ui/LoadingSpinner';
-import { hospitalAPI } from '@/services/api';
+import { hospitalAPI, authAPI } from '@/services/api';
+import { Modal } from '@/components/ui/Modal';
+import { Input } from '@/components/ui/Input';
+import { LocationPicker } from '@/components/maps/LocationPicker';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { hospitalRegisterSchema, HospitalRegisterFormData } from '@/utils/validators';
 
 export default function HospitalsPage() {
   const [hospitals, setHospitals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<HospitalRegisterFormData>({
+    resolver: zodResolver(hospitalRegisterSchema),
+    defaultValues: {
+      latitude: 0,
+      longitude: 0,
+      totalBeds: 0,
+      availableBeds: 0,
+    },
+  });
+
+  const lat = watch('latitude');
+  const lng = watch('longitude');
 
   const fetchHospitals = async () => {
     try {
@@ -23,6 +50,23 @@ export default function HospitalsPage() {
   };
 
   useEffect(() => { fetchHospitals(); }, []);
+
+  const onSubmit = async (data: HospitalRegisterFormData) => {
+    try {
+      const payload = {
+        ...data,
+        username: data.email,
+        specialties: data.specialties?.split(',').map((s) => s.trim()).filter(Boolean) || [],
+      };
+      await authAPI.createHospital(payload);
+      setToast({ message: 'Hospital created successfully', type: 'success' });
+      setModalOpen(false);
+      reset({ latitude: 0, longitude: 0, totalBeds: 0, availableBeds: 0 });
+      fetchHospitals();
+    } catch (error: any) {
+      setToast({ message: error.response?.data?.message || 'Failed to create hospital', type: 'error' });
+    }
+  };
 
   const handleVerify = async (id: string) => {
     try {
@@ -40,9 +84,14 @@ export default function HospitalsPage() {
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Hospitals</h2>
-        <p className="text-gray-500 mt-1">View and verify registered hospitals</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Hospitals</h2>
+          <p className="text-gray-500 mt-1">View, verify, and create hospitals</p>
+        </div>
+        <Button icon={<Plus className="h-4 w-4" />} onClick={() => setModalOpen(true)}>
+          Add Hospital
+        </Button>
       </div>
 
       <Card>
@@ -95,6 +144,48 @@ export default function HospitalsPage() {
           </table>
         </div>
       </Card>
+
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Add Hospital">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input label="Hospital Name" placeholder="City General" error={errors.hospitalName?.message} {...register('hospitalName')} />
+            <Input label="Registration Number" placeholder="Reg #" error={errors.registrationNumber?.message} {...register('registrationNumber')} />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input label="Contact Person" placeholder="Full name" error={errors.fullName?.message} {...register('fullName')} />
+            <Input label="Email" type="email" placeholder="hospital@example.com" error={errors.email?.message} {...register('email')} />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input label="Phone" placeholder="Phone number" error={errors.phone?.message} {...register('phone')} />
+            <Input label="Specialties" placeholder="Cardiology, Trauma" error={errors.specialties?.message} {...register('specialties')} />
+          </div>
+
+          <Input label="Address" placeholder="Full address" error={errors.address?.message} {...register('address')} />
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input label="Total Beds" type="number" placeholder="0" error={errors.totalBeds?.message} {...register('totalBeds', { valueAsNumber: true })} />
+            <Input label="Available Beds" type="number" placeholder="0" error={errors.availableBeds?.message} {...register('availableBeds', { valueAsNumber: true })} />
+          </div>
+
+          <LocationPicker
+            latitude={lat}
+            longitude={lng}
+            onLocationChange={(newLat, newLng) => {
+              setValue('latitude', newLat);
+              setValue('longitude', newLng);
+            }}
+          />
+
+          <Input label="Password" type="password" placeholder="Set password" error={errors.password?.message} {...register('password')} />
+
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)} className="flex-1">Cancel</Button>
+            <Button type="submit" loading={isSubmitting} className="flex-1">Create Hospital</Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

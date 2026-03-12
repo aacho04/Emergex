@@ -34,4 +34,11 @@ router.post(
   authController.createTrafficPolice
 );
 
+router.post(
+  '/create-hospital',
+  authMiddleware,
+  roleMiddleware([UserRole.SUPER_ADMIN]),
+  authController.createHospital
+);
+
 export default router;

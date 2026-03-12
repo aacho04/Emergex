@@ -87,6 +87,19 @@ export class AuthController {
     }
   }
 
+  async createHospital(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = registerHospitalSchema.parse(req.body);
+      const result = await authService.createHospitalAdmin(data);
+      res.status(201).json({ success: true, data: result });
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ success: false, errors: error.errors });
+      }
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
   async createTrafficPolice(req: Request, res: Response, next: NextFunction) {
     try {
       const data = createTrafficPoliceSchema.parse(req.body);

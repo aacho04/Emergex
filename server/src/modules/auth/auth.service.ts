@@ -79,12 +79,20 @@ export class AuthService {
   }
 
   async registerHospital(data: RegisterHospitalInput) {
-    const username = data.username || data.email;
+    const email = data.email.trim().toLowerCase();
+    const username = (data.username || data.email).trim().toLowerCase();
+    const registrationNumber = data.registrationNumber.trim();
+
     const existing = await User.findOne({
-      $or: [{ username }, { email: data.email }],
+      $or: [{ username }, { email }],
     });
     if (existing) {
-      throw new Error('Email already exists');
+      throw new Error('Username or email already exists');
+    }
+
+    const existingReg = await Hospital.findOne({ registrationNumber });
+    if (existingReg) {
+      throw new Error('Registration number already exists');
     }
 
     // Generate 6-digit OTP
@@ -96,7 +104,7 @@ export class AuthService {
       password: data.password,
       fullName: data.fullName,
       role: UserRole.HOSPITAL,
-      email: data.email,
+      email,
       phone: data.phone,
       isEmailVerified: false,
       emailOTP: otp,
@@ -106,10 +114,10 @@ export class AuthService {
     await Hospital.create({
       user: user._id,
       hospitalName: data.hospitalName,
-      registrationNumber: data.registrationNumber,
+      registrationNumber,
       address: data.address,
       phone: data.phone,
-      email: data.email,
+      email,
       specialties: data.specialties || [],
       totalBeds: data.totalBeds || 0,
       availableBeds: data.availableBeds || 0,
@@ -125,7 +133,55 @@ export class AuthService {
       console.error('Failed to send verification OTP:', error);
     }
 
-    return { message: 'Hospital registered. Please check your email for the verification OTP.', email: data.email };
+    return { message: 'Hospital registered. Please check your email for the verification OTP.', email };
+  }
+
+  async createHospitalAdmin(data: RegisterHospitalInput) {
+    const email = data.email.trim().toLowerCase();
+    const username = (data.username || data.email).trim().toLowerCase();
+    const registrationNumber = data.registrationNumber.trim();
+
+    const existing = await User.findOne({
+      $or: [{ username }, { email }],
+    });
+    if (existing) {
+      throw new Error('Username or email already exists');
+    }
+
+    const existingReg = await Hospital.findOne({ registrationNumber });
+    if (existingReg) {
+      throw new Error('Registration number already exists');
+    }
+
+    const user = await User.create({
+      username,
+      password: data.password,
+      fullName: data.fullName,
+      role: UserRole.HOSPITAL,
+      email,
+      phone: data.phone,
+      isEmailVerified: true,
+      isActive: true,
+    });
+
+    const hospital = await Hospital.create({
+      user: user._id,
+      hospitalName: data.hospitalName,
+      registrationNumber,
+      address: data.address,
+      phone: data.phone,
+      email,
+      specialties: data.specialties || [],
+      totalBeds: data.totalBeds || 0,
+      availableBeds: data.availableBeds || 0,
+      location: {
+        type: 'Point',
+        coordinates: [data.longitude, data.latitude],
+      },
+      isVerified: true,
+    });
+
+    return { user, hospital };
   }
 
   async verifyEmail(email: string, otp: string) {

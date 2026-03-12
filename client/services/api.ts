@@ -51,6 +51,7 @@ export const authAPI = {
   createERSOfficer: (data: any) => api.post('/auth/create-ers-officer', data),
   createAmbulance: (data: any) => api.post('/auth/create-ambulance', data),
   createTrafficPolice: (data: any) => api.post('/auth/create-traffic-police', data),
+  createHospital: (data: any) => api.post('/auth/create-hospital', data),
 };
 
 // User APIs
