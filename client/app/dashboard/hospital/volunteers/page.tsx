@@ -63,42 +63,45 @@ export default function HospitalVolunteersPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {volunteers.map((v: any) => (
-            <Card key={v._id}>
-              <div className="p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900">{v.fullName}</h3>
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
-                    <span className="text-sm font-bold text-gray-900">{v.averageRating?.toFixed(1) || '0.0'}</span>
+          {volunteers.map((v: any) => {
+            const displayName = v.name || v.fullName || 'Volunteer';
+            return (
+              <Card key={v._id}>
+                <div className="p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-gray-900">{displayName}</h3>
+                    <div className="flex items-center gap-1">
+                      <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+                      <span className="text-sm font-bold text-gray-900">{v.averageRating?.toFixed(1) || '0.0'}</span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-2">{v.phone}</p>
+                  {v.skills?.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {v.skills.map((s: string) => (
+                        <span key={s} className="px-2 py-0.5 text-xs font-medium rounded-full bg-primary-50 text-primary-700">{s}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className={`text-xs font-medium ${v.isAvailable ? 'text-green-600' : 'text-gray-400'}`}>
+                      {v.isAvailable ? 'Available' : 'Unavailable'}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setRatingModal({ open: true, volunteerId: v._id, name: displayName });
+                        setSelectedRating(0);
+                      }}
+                    >
+                      <Star className="h-3.5 w-3.5 mr-1" /> Rate
+                    </Button>
                   </div>
                 </div>
-                <p className="text-sm text-gray-500 mb-2">{v.phone}</p>
-                {v.skills?.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {v.skills.map((s: string) => (
-                      <span key={s} className="px-2 py-0.5 text-xs font-medium rounded-full bg-primary-50 text-primary-700">{s}</span>
-                    ))}
-                  </div>
-                )}
-                <div className="flex items-center justify-between">
-                  <span className={`text-xs font-medium ${v.isAvailable ? 'text-green-600' : 'text-gray-400'}`}>
-                    {v.isAvailable ? 'Available' : 'Unavailable'}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setRatingModal({ open: true, volunteerId: v._id, name: v.fullName });
-                      setSelectedRating(0);
-                    }}
-                  >
-                    <Star className="h-3.5 w-3.5 mr-1" /> Rate
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
 
