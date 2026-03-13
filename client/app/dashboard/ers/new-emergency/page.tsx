@@ -37,7 +37,7 @@ export default function NewEmergencyPage() {
   const [step, setStep] = useState<Step>('phone');
 
   // Phone step
-  const [callerPhone, setCallerPhone] = useState('');
+  const [callerPhone, setCallerPhone] = useState('+91 ');
   const [smsSent, setSmsSent] = useState(false);
   const [sendingSMS, setSendingSMS] = useState(false);
 
@@ -76,15 +76,29 @@ export default function NewEmergencyPage() {
   }, [socket, emergencyId]);
 
   // Step 1: Create emergency with phone number
+  const normalizePhone = useCallback((value: string) => {
+    const digitsOnly = value.replace(/\D/g, '');
+    if (digitsOnly.length === 10) return `+91 ${digitsOnly}`;
+    if (digitsOnly.length === 12 && digitsOnly.startsWith('91')) {
+      return `+91 ${digitsOnly.slice(2)}`;
+    }
+    return value.trim();
+  }, []);
+
   const handleCreateEmergency = async () => {
-    if (!callerPhone || callerPhone.length < 10) {
+    const formattedPhone = normalizePhone(callerPhone);
+    const digitsOnly = formattedPhone.replace(/\D/g, '');
+    const isValidPhone =
+      digitsOnly.length === 10 || (digitsOnly.length === 12 && digitsOnly.startsWith('91'));
+
+    if (!formattedPhone || !isValidPhone) {
       setToast({ message: 'Please enter a valid phone number', type: 'error' });
       return;
     }
 
     try {
       const res = await emergencyAPI.create({
-        callerPhone,
+        callerPhone: formattedPhone,
         patientName: patientName || undefined,
         patientCondition,
         description: description || undefined,
@@ -199,7 +213,19 @@ export default function NewEmergencyPage() {
               label="Caller Phone Number *"
               placeholder="Enter caller's phone number"
               value={callerPhone}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCallerPhone(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                const raw = e.target.value;
+                if (!raw) {
+                  setCallerPhone('+91 ');
+                  return;
+                }
+                if (!raw.startsWith('+91')) {
+                  const cleaned = raw.replace(/^\+?91\s*/, '');
+                  setCallerPhone(`+91 ${cleaned}`);
+                  return;
+                }
+                setCallerPhone(raw);
+              }}
               type="tel"
             />
             <Input

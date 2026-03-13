@@ -97,7 +97,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-[#0b0f1a] flex text-slate-100">
       {/* Sidebar Overlay (mobile) */}
       {sidebarOpen && (
         <div
@@ -109,13 +109,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed lg:sticky top-0 left-0 z-50 h-screen w-64 bg-sidebar-bg flex flex-col transition-transform duration-300 lg:translate-x-0',
+          'fixed lg:sticky top-0 left-0 z-50 h-screen w-64 bg-[#0b0f1a] border-r border-white/10 flex flex-col transition-transform duration-300 lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         {/* Logo */}
         <div className="flex items-center gap-2.5 px-5 py-5 border-b border-white/10">
-          <div className="bg-primary-600 p-1.5 rounded-lg">
+          <div className="bg-[#ef233c] p-1.5 rounded-lg shadow-lg shadow-red-500/30">
             <Siren className="h-5 w-5 text-white" />
           </div>
           <span className="text-lg font-bold text-white">Emergex</span>
@@ -129,7 +129,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-3 py-4">
-          <p className="px-3 mb-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          <p className="px-3 mb-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Main Menu
           </p>
           <div className="space-y-1">
@@ -144,8 +144,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
                   currentPath === link.href
-                    ? 'bg-sidebar-active text-white'
-                    : 'text-gray-400 hover:bg-sidebar-hover hover:text-white'
+                    ? 'bg-[#ef233c]/15 text-white border border-[#ef233c]/40'
+                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
                 )}
               >
                 {link.icon}
@@ -162,11 +162,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="px-3 py-4 border-t border-white/10">
           <div className="px-3 py-2 mb-2">
             <p className="text-sm font-medium text-white truncate">{user.fullName}</p>
-            <p className="text-xs text-gray-400">{getRoleLabel(user.role)}</p>
+            <p className="text-xs text-slate-400">{getRoleLabel(user.role)}</p>
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-sidebar-hover hover:text-white transition-all duration-200 w-full"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-white transition-all duration-200 w-full"
           >
             <LogOut className="h-5 w-5" />
             Log Out
@@ -177,26 +177,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Top Header */}
-        <header className="sticky top-0 z-30 bg-white border-b border-gray-100 px-4 lg:px-8">
+        <header className="sticky top-0 z-30 nav-surface px-4 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+                className="lg:hidden p-2 rounded-lg hover:bg-white/10"
               >
-                <Menu className="h-5 w-5 text-gray-600" />
+                <Menu className="h-5 w-5 text-slate-200" />
               </button>
-              <h1 className="text-lg font-semibold text-gray-900">Dashboard</h1>
+              <h1 className="text-lg font-semibold text-white">Dashboard</h1>
             </div>
 
             <div className="flex items-center gap-3">
               {/* Search */}
-              <div className="hidden md:flex items-center bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
-                <Search className="h-4 w-4 text-gray-400 mr-2" />
+              <div className="hidden md:flex items-center bg-white/10 rounded-lg px-3 py-2 border border-white/10">
+                <Search className="h-4 w-4 text-slate-300 mr-2" />
                 <input
                   type="text"
                   placeholder="Search..."
-                  className="bg-transparent border-none outline-none text-sm text-gray-600 placeholder:text-gray-400 w-48"
+                  className="bg-transparent border-none outline-none text-sm text-slate-200 placeholder:text-slate-400 w-48"
                 />
               </div>
 
@@ -204,15 +204,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <NotificationPanel />
 
               {/* User avatar */}
-              <div className="flex items-center gap-2 pl-3 border-l border-gray-200">
-                <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
-                  <span className="text-sm font-semibold text-primary-700">
+              <div className="flex items-center gap-2 pl-3 border-l border-white/10">
+                <div className="w-8 h-8 rounded-full bg-[#ef233c]/20 flex items-center justify-center">
+                  <span className="text-sm font-semibold text-white">
                     {user.fullName.charAt(0)}
                   </span>
                 </div>
                 <div className="hidden sm:block">
-                  <p className="text-sm font-medium text-gray-900">{user.fullName}</p>
-                  <p className="text-xs text-gray-400">{getRoleLabel(user.role)}</p>
+                  <p className="text-sm font-medium text-white">{user.fullName}</p>
+                  <p className="text-xs text-slate-400">{getRoleLabel(user.role)}</p>
                 </div>
               </div>
             </div>
@@ -220,7 +220,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 lg:p-8">
+        <main className="flex-1 p-4 lg:p-8 bg-[#0f172a]">
           {children}
         </main>
       </div>

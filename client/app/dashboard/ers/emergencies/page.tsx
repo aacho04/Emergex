@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AlertTriangle, Pencil } from 'lucide-react';
+import { AlertTriangle, Pencil, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -32,6 +32,9 @@ export default function ERSEmergenciesPage() {
     description: '',
   });
   const [saving, setSaving] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteEmergency, setDeleteEmergency] = useState<any>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchEmergencies();
@@ -71,6 +74,27 @@ export default function ERSEmergenciesPage() {
       setToast({ message: err.response?.data?.message || 'Failed to update emergency', type: 'error' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const openDelete = (e: any) => {
+    setDeleteEmergency(e);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteEmergency) return;
+    setDeleting(true);
+    try {
+      await emergencyAPI.remove(deleteEmergency._id);
+      setToast({ message: 'Emergency deleted successfully', type: 'success' });
+      setDeleteModalOpen(false);
+      setDeleteEmergency(null);
+      setEmergencies((prev) => prev.filter((item) => item._id !== deleteEmergency._id));
+    } catch (err: any) {
+      setToast({ message: err.response?.data?.message || 'Failed to delete emergency', type: 'error' });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -139,15 +163,24 @@ export default function ERSEmergenciesPage() {
                       <div className="text-xs text-gray-400">{formatTime(e.createdAt)}</div>
                     </td>
                     <td className="py-3 px-4">
-                      {!COMPLETED_STATUSES.includes(e.status) && (
+                      <div className="flex items-center gap-2">
+                        {!COMPLETED_STATUSES.includes(e.status) && (
+                          <button
+                            onClick={() => openEdit(e)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
+                          >
+                            <Pencil className="h-3 w-3" />
+                            Edit
+                          </button>
+                        )}
                         <button
-                          onClick={() => openEdit(e)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
+                          onClick={() => openDelete(e)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
                         >
-                          <Pencil className="h-3 w-3" />
-                          Edit
+                          <Trash2 className="h-3 w-3" />
+                          Delete
                         </button>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -204,6 +237,27 @@ export default function ERSEmergenciesPage() {
               Save Changes
             </Button>
             <Button variant="secondary" onClick={() => setEditModalOpen(false)} className="flex-1">
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title="Delete Emergency"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Are you sure you want to delete this emergency? This action cannot be undone.
+          </p>
+          <div className="flex items-center gap-3">
+            <Button variant="danger" onClick={handleDelete} loading={deleting} className="flex-1">
+              Delete
+            </Button>
+            <Button variant="secondary" onClick={() => setDeleteModalOpen(false)} className="flex-1">
               Cancel
             </Button>
           </div>

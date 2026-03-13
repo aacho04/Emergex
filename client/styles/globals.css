@@ -10,6 +10,17 @@
   body {
     @apply bg-gray-50 text-gray-900 font-sans antialiased;
   }
+
+  :root {
+    --ink-900: #0b0f1a;
+    --ink-800: #111827;
+    --ink-700: #1f2937;
+    --crimson-600: #ef233c;
+    --crimson-500: #ff2d55;
+    --ember-500: #ff3b3b;
+    --mist-200: #e2e8f0;
+    --mist-400: #94a3b8;
+  }
 }
 
 @layer components {
@@ -126,4 +137,43 @@
     linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   background-size: 40px 40px;
+}
+
+.hero-shell {
+  background: radial-gradient(1200px 600px at 10% 10%, rgba(239, 35, 60, 0.25), transparent 60%),
+    radial-gradient(900px 500px at 85% 35%, rgba(59, 130, 246, 0.18), transparent 55%),
+    linear-gradient(135deg, var(--ink-900), var(--ink-800) 55%, #0f1b2d 100%);
+}
+
+.nav-surface {
+  background: rgba(11, 15, 26, 0.8);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.glass-panel {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(18px);
+}
+
+.chip-glow {
+  background: rgba(239, 35, 60, 0.12);
+  border: 1px solid rgba(239, 35, 60, 0.35);
+  color: #fecdd3;
+}
+
+.cta-crimson {
+  background: linear-gradient(120deg, #ef233c, #ff3b3b);
+  box-shadow: 0 12px 24px rgba(239, 35, 60, 0.35);
+}
+
+.cta-crimson:hover {
+  filter: brightness(1.05);
+}
+
+.cta-ghost {
+  background: rgba(226, 232, 240, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.2);
 }

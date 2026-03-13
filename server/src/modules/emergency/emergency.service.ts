@@ -533,6 +533,44 @@ export class EmergencyService {
     return emergency;
   }
 
+  async deleteEmergency(emergencyId: string, userId: string) {
+    const emergency = await Emergency.findById(emergencyId);
+    if (!emergency) throw new Error('Emergency not found');
+
+    const protectedStatuses = [
+      EmergencyStatus.AMBULANCE_DISPATCHED,
+      EmergencyStatus.PATIENT_PICKED_UP,
+      EmergencyStatus.EN_ROUTE_HOSPITAL,
+      EmergencyStatus.REACHED_HOSPITAL,
+      EmergencyStatus.TRANSFERRED,
+    ];
+    if (protectedStatuses.includes(emergency.status)) {
+      throw new Error('Cannot delete an active emergency');
+    }
+
+    if (emergency.assignedAmbulance) {
+      const ambulance = await Ambulance.findById(emergency.assignedAmbulance);
+      if (ambulance && String(ambulance.currentEmergency) === String(emergency._id)) {
+        ambulance.currentEmergency = undefined;
+        if (ambulance.dutyStatus === DutyStatus.ON_DUTY) {
+          ambulance.ambulanceStatus = AmbulanceStatus.AVAILABLE;
+        }
+        await ambulance.save();
+      }
+    }
+
+    await Emergency.findByIdAndDelete(emergencyId);
+
+    const io = getIO();
+    io.emit('emergency:deleted', {
+      emergencyId,
+      message: 'Emergency deleted',
+      deletedBy: userId,
+    });
+
+    return { success: true };
+  }
+
   async getStats() {
     const [total, pending, active, completed] = await Promise.all([
       Emergency.countDocuments(),

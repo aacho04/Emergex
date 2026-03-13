@@ -36,13 +36,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-[#0b0f1a] text-slate-100">
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
       )}
 
       {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 text-white items-center justify-center p-12 sticky top-0 h-screen">
+      <div className="hidden lg:flex lg:w-1/2 hero-shell text-white items-center justify-center p-12 sticky top-0 h-screen">
         <div className="max-w-md">
           <div className="flex items-center gap-3 mb-8">
             <div className="bg-white/10 p-2.5 rounded-xl backdrop-blur-sm">
@@ -53,7 +53,7 @@ export default function LoginPage() {
           <h1 className="text-4xl font-extrabold leading-tight mb-4">
             Emergency Response System
           </h1>
-          <p className="text-primary-200 text-lg leading-relaxed">
+          <p className="text-slate-200 text-lg leading-relaxed">
             Coordinating citizens, ERS officers, ambulances, hospitals, traffic police, and volunteers for swift emergency response.
           </p>
 
@@ -61,7 +61,7 @@ export default function LoginPage() {
             {['ERS Officers', 'Ambulances', 'Hospitals', 'Traffic Police'].map((role) => (
               <div
                 key={role}
-                className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3 text-sm font-medium"
+                className="glass-panel rounded-lg px-4 py-3 text-sm font-medium"
               >
                 {role}
               </div>
@@ -71,76 +71,77 @@ export default function LoginPage() {
       </div>
 
       {/* Right Panel - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-8 bg-[#0b0f1a]">
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="bg-primary-600 p-1.5 rounded-lg">
+            <div className="bg-[#ef233c] p-1.5 rounded-lg shadow-lg shadow-red-500/30">
               <Siren className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900">Emergex</span>
+            <span className="text-xl font-bold text-white">Emergex</span>
           </div>
-
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
-            <p className="text-gray-500 mt-2">Sign in to your dashboard</p>
-          </div>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            <Input
-              label="Username"
-              placeholder="Enter your username"
-              error={errors.username?.message}
-              autoComplete="username"
-              {...register('username')}
-            />
-
-            <div className="relative">
-              <Input
-                label="Password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
-                error={errors.password?.message}
-                autoComplete="current-password"
-                {...register('password')}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
+          <div className="bg-white/95 text-gray-900 rounded-3xl shadow-2xl shadow-black/30 p-8 border border-white/10">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
+              <p className="text-gray-500 mt-2">Sign in to your dashboard</p>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full"
-              size="lg"
-              loading={isSubmitting}
-              icon={<LogIn className="h-5 w-5" />}
-            >
-              Sign In
-            </Button>
-          </form>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <Input
+                label="Username"
+                placeholder="Enter your username"
+                error={errors.username?.message}
+                autoComplete="username"
+                {...register('username')}
+              />
 
-          <div className="mt-8 pt-6 border-t border-gray-100">
-            <p className="text-sm text-gray-500 text-center">
-              Hospital?{' '}
-              <Link href="/register-hospital" className="text-primary-600 hover:text-primary-700 font-medium">
-                Register here
+              <div className="relative">
+                <Input
+                  label="Password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter your password"
+                  error={errors.password?.message}
+                  autoComplete="current-password"
+                  {...register('password')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                size="lg"
+                loading={isSubmitting}
+                icon={<LogIn className="h-5 w-5" />}
+              >
+                Sign In
+              </Button>
+            </form>
+
+            <div className="mt-8 pt-6 border-t border-gray-100">
+              <p className="text-sm text-gray-500 text-center">
+                Hospital?{' '}
+                <Link href="/register-hospital" className="text-[#ef233c] hover:text-[#ff3b3b] font-medium">
+                  Register here
+                </Link>
+              </p>
+            </div>
+
+            <div className="mt-4 text-center">
+              <Link href="/" className="text-sm text-gray-400 hover:text-gray-600">
+                Back to Home
               </Link>
-            </p>
-          </div>
-
-          <div className="mt-4 text-center">
-            <Link href="/" className="text-sm text-gray-400 hover:text-gray-600">
-              Back to Home
-            </Link>
+            </div>
           </div>
         </div>
       </div>

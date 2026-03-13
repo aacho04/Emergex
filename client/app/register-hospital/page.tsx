@@ -129,11 +129,11 @@ export default function RegisterHospitalPage() {
   // OTP Verification Step
   if (step === 'otp') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-[#0b0f1a] p-4 text-slate-100">
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-        <Card className="max-w-md w-full text-center p-8">
-          <div className="inline-flex p-3 rounded-xl bg-primary-50 mb-4">
-            <Mail className="h-8 w-8 text-primary-600" />
+        <Card className="max-w-md w-full text-center p-8 bg-white text-gray-900">
+          <div className="inline-flex p-3 rounded-xl bg-rose-50 mb-4">
+            <Mail className="h-8 w-8 text-[#ef233c]" />
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Verify Your Email</h2>
           <p className="text-gray-500 mb-1">We sent a 6-digit OTP to</p>
@@ -150,7 +150,7 @@ export default function RegisterHospitalPage() {
                 value={digit}
                 onChange={(e) => handleOtpChange(i, e.target.value)}
                 onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                className="w-12 h-14 text-center text-xl font-bold border-2 border-gray-200 rounded-xl focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all"
+                className="w-12 h-14 text-center text-xl font-bold border-2 border-gray-200 rounded-xl focus:border-[#ef233c] focus:ring-2 focus:ring-rose-200 outline-none transition-all"
               />
             ))}
           </div>
@@ -164,7 +164,7 @@ export default function RegisterHospitalPage() {
             <button
               onClick={resendOTP}
               disabled={resending}
-              className="text-primary-600 font-medium hover:underline inline-flex items-center gap-1 disabled:opacity-50"
+              className="text-[#ef233c] font-medium hover:underline inline-flex items-center gap-1 disabled:opacity-50"
             >
               {resending ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : null}
               Resend
@@ -178,8 +178,8 @@ export default function RegisterHospitalPage() {
   // Success Step
   if (step === 'done') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <Card className="max-w-md w-full text-center p-8">
+      <div className="min-h-screen flex items-center justify-center bg-[#0b0f1a] p-4 text-slate-100">
+        <Card className="max-w-md w-full text-center p-8 bg-white text-gray-900">
           <div className="inline-flex p-3 rounded-xl bg-green-50 mb-4">
             <Building2 className="h-8 w-8 text-green-600" />
           </div>
@@ -196,29 +196,29 @@ export default function RegisterHospitalPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-[#0b0f1a] py-12 text-slate-100">
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
       )}
 
       <div className="max-w-2xl mx-auto px-4">
-        <Link href="/" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-6">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm text-slate-300 hover:text-white mb-6">
           <ArrowLeft className="h-4 w-4" />
           Back to Home
         </Link>
 
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="bg-primary-600 p-1.5 rounded-lg">
+            <div className="bg-[#ef233c] p-1.5 rounded-lg shadow-lg shadow-red-500/30">
               <Siren className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900">Emergex</span>
+            <span className="text-xl font-bold text-white">Emergex</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Hospital Registration</h1>
-          <p className="text-gray-500 mt-2">Register your hospital with the Emergex network</p>
+          <h1 className="text-2xl font-bold text-white">Hospital Registration</h1>
+          <p className="text-slate-300 mt-2">Register your hospital with the Emergex network</p>
         </div>
 
-        <Card>
+        <Card className="bg-white text-gray-900">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="grid md:grid-cols-2 gap-4">
               <Input

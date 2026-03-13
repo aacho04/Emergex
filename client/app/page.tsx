@@ -47,35 +47,35 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#0b0f1a] text-slate-100">
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
       )}
 
       {/* Navigation */}
-      <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
+      <nav className="nav-surface sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-2">
-              <div className="bg-primary-600 p-1.5 rounded-lg">
+              <div className="bg-[#ef233c] p-1.5 rounded-lg shadow-lg shadow-red-500/30">
                 <Siren className="h-6 w-6 text-white" />
               </div>
-              <span className="text-xl font-bold text-gray-900">Emergex</span>
+              <span className="text-xl font-bold text-white">Emergex</span>
             </div>
 
             {/* Desktop nav */}
             <div className="hidden md:flex items-center gap-6">
-              <a href="#features" className="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors">
+              <a href="#features" className="text-sm font-medium text-slate-200 hover:text-white transition-colors">
                 Features
               </a>
-              <a href="#volunteer" className="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors">
+              <a href="#volunteer" className="text-sm font-medium text-slate-200 hover:text-white transition-colors">
                 Volunteer
               </a>
-              <a href="#hospital-register" className="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors">
+              <a href="#hospital-register" className="text-sm font-medium text-slate-200 hover:text-white transition-colors">
                 Hospital
               </a>
               <Link href="/login">
-                <Button variant="primary" size="sm">
+                <Button variant="primary" size="sm" className="bg-[#ef233c] hover:bg-[#ff3b3b] shadow-lg shadow-red-500/30">
                   Login
                 </Button>
               </Link>
@@ -84,7 +84,7 @@ export default function HomePage() {
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+              className="md:hidden p-2 rounded-lg hover:bg-white/10"
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -92,13 +92,13 @@ export default function HomePage() {
 
           {/* Mobile nav */}
           {mobileMenuOpen && (
-            <div className="md:hidden py-4 border-t border-gray-100">
+            <div className="md:hidden py-4 border-t border-white/10">
               <div className="flex flex-col gap-3">
-                <a href="#features" className="text-sm font-medium text-gray-600 py-2">Features</a>
-                <a href="#volunteer" className="text-sm font-medium text-gray-600 py-2">Volunteer</a>
-                <a href="#hospital-register" className="text-sm font-medium text-gray-600 py-2">Hospital</a>
+                <a href="#features" className="text-sm font-medium text-slate-200 py-2">Features</a>
+                <a href="#volunteer" className="text-sm font-medium text-slate-200 py-2">Volunteer</a>
+                <a href="#hospital-register" className="text-sm font-medium text-slate-200 py-2">Hospital</a>
                 <Link href="/login">
-                  <Button variant="primary" className="w-full">Login</Button>
+                  <Button variant="primary" className="w-full bg-[#ef233c] hover:bg-[#ff3b3b]">Login</Button>
                 </Link>
               </div>
             </div>
@@ -107,23 +107,29 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+      <section className="relative hero-shell text-white overflow-hidden">
+        <div className="absolute inset-0 bg-grid-pattern opacity-15" />
+        <div className="absolute -left-32 top-8 h-64 w-64 rounded-full bg-[#ef233c]/20 blur-3xl" />
+        <div className="absolute right-0 top-24 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h1 className="text-4xl lg:text-6xl font-extrabold leading-tight text-white">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full chip-glow text-xs font-semibold tracking-wide">
+                <span className="h-2 w-2 rounded-full bg-[#ef233c]" />
+                Intelligent Emergency Response
+              </div>
+              <h1 className="mt-6 text-4xl lg:text-6xl font-extrabold leading-tight text-white">
                 Every Second
                 <br />
-                Saves a Life
+                <span className="text-[#ff3b3b]">Saves a Life</span>
               </h1>
-              <p className="mt-6 text-lg text-primary-100 leading-relaxed max-w-xl">
+              <p className="mt-6 text-lg text-slate-200 leading-relaxed max-w-xl">
                 Emergex connects citizens, ERS officers, ambulances, hospitals, traffic police, and volunteers for swift and coordinated emergency response.
               </p>
               <div className="mt-10 flex flex-col sm:flex-row gap-4">
                 <button
                   onClick={handleSOSClick}
-                  className="sos-button inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg px-6 py-3 text-base transition-colors"
+                  className="sos-button cta-crimson inline-flex items-center justify-center gap-2 text-white font-semibold rounded-lg px-6 py-3 text-base transition-colors"
                 >
                   <Phone className="h-5 w-5" />
                   SOS - Call 108
@@ -132,7 +138,7 @@ export default function HomePage() {
                   <Button
                     variant="secondary"
                     size="lg"
-                    className="bg-white/10 border-white/30 text-white hover:bg-white/20 w-full sm:w-auto"
+                    className="cta-ghost text-white hover:bg-white/15 w-full sm:w-auto"
                     icon={<ArrowRight className="h-5 w-5" />}
                   >
                     System Login
@@ -151,11 +157,11 @@ export default function HomePage() {
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/10"
+                  className="glass-panel rounded-2xl p-6"
                 >
-                  <div className="text-primary-200 mb-2">{stat.icon}</div>
+                  <div className="text-rose-100 mb-2">{stat.icon}</div>
                   <p className="text-2xl font-bold">{stat.value}</p>
-                  <p className="text-primary-200 text-sm mt-1">{stat.label}</p>
+                  <p className="text-slate-300 text-sm mt-1">{stat.label}</p>
                 </div>
               ))}
             </div>
@@ -164,11 +170,11 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-gray-50">
+      <section id="features" className="py-20 bg-[#0f172a]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">How Emergex Works</h2>
-            <p className="mt-4 text-lg text-gray-500 max-w-2xl mx-auto">
+            <h2 className="text-3xl lg:text-4xl font-bold text-white">How Emergex Works</h2>
+            <p className="mt-4 text-lg text-slate-300 max-w-2xl mx-auto">
               A streamlined emergency response workflow connecting all responders in real-time.
             </p>
           </div>
@@ -212,12 +218,12 @@ export default function HomePage() {
                 color: 'bg-teal-50 text-teal-600',
               },
             ].map((feature) => (
-              <Card key={feature.title} className="text-center" hover>
+              <Card key={feature.title} className="text-left bg-white/5 border-white/10 text-slate-100" hover>
                 <div className={`inline-flex p-3 rounded-xl ${feature.color} mb-4`}>
                   {feature.icon}
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{feature.desc}</p>
+                <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
+                <p className="text-sm text-slate-300 leading-relaxed">{feature.desc}</p>
               </Card>
             ))}
           </div>
@@ -225,19 +231,19 @@ export default function HomePage() {
       </section>
 
       {/* Volunteer Registration */}
-      <section id="volunteer" className="py-20 bg-white">
+      <section id="volunteer" className="py-20 bg-[#0b0f1a]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
-            <div className="inline-flex p-3 rounded-xl bg-teal-50 mb-4">
-              <Heart className="h-8 w-8 text-teal-600" />
+            <div className="inline-flex p-3 rounded-xl bg-rose-500/10 mb-4">
+              <Heart className="h-8 w-8 text-rose-200" />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900">Become a Volunteer</h2>
-            <p className="mt-3 text-gray-500 max-w-lg mx-auto">
+            <h2 className="text-3xl font-bold text-white">Become a Volunteer</h2>
+            <p className="mt-3 text-slate-300 max-w-lg mx-auto">
               Join the Community First Responders program. Help save lives by providing critical assistance before ambulance arrival.
             </p>
           </div>
 
-          <Card className="max-w-xl mx-auto">
+          <Card className="max-w-xl mx-auto bg-white">
             <form onSubmit={handleSubmit(onSubmitVolunteer)} className="space-y-4">
               <Input
                 label="Full Name"
@@ -269,7 +275,7 @@ export default function HomePage() {
                 error={errors.medicalStudentCollegeId?.message}
                 {...register('medicalStudentCollegeId')}
               />
-              <Button type="submit" className="w-full" loading={isSubmitting}>
+              <Button type="submit" className="w-full bg-[#ef233c] hover:bg-[#ff3b3b]" loading={isSubmitting}>
                 Register as Volunteer
               </Button>
             </form>
@@ -278,17 +284,17 @@ export default function HomePage() {
       </section>
 
       {/* Hospital Registration CTA */}
-      <section id="hospital-register" className="py-20 bg-gray-50">
+      <section id="hospital-register" className="py-20 bg-[#0f172a]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex p-3 rounded-xl bg-purple-50 mb-4">
-            <Building2 className="h-8 w-8 text-purple-600" />
+          <div className="inline-flex p-3 rounded-xl bg-blue-500/10 mb-4">
+            <Building2 className="h-8 w-8 text-blue-200" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900">Hospital Registration</h2>
-          <p className="mt-3 text-gray-500 max-w-lg mx-auto mb-8">
+          <h2 className="text-3xl font-bold text-white">Hospital Registration</h2>
+          <p className="mt-3 text-slate-300 max-w-lg mx-auto mb-8">
             Register your hospital with Emergex to receive emergency patient transfers and manage volunteers.
           </p>
           <Link href="/register-hospital">
-            <Button size="lg" icon={<ArrowRight className="h-5 w-5" />}>
+            <Button size="lg" icon={<ArrowRight className="h-5 w-5" />} className="bg-[#ef233c] hover:bg-[#ff3b3b]">
               Register Your Hospital
             </Button>
           </Link>
@@ -296,11 +302,11 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-12">
+      <footer className="bg-[#070b12] text-gray-400 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="bg-primary-600 p-1.5 rounded-lg">
+              <div className="bg-[#ef233c] p-1.5 rounded-lg shadow-lg shadow-red-500/30">
                 <Siren className="h-5 w-5 text-white" />
               </div>
               <span className="text-lg font-bold text-white">Emergex</span>

@@ -20,11 +20,11 @@ export function Button({
   ...props
 }: ButtonProps) {
   const variants = {
-    primary: 'bg-primary-600 hover:bg-primary-700 text-white focus:ring-primary-500',
-    secondary: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 focus:ring-primary-500',
-    danger: 'bg-danger-500 hover:bg-danger-600 text-white focus:ring-danger-500',
-    success: 'bg-success-500 hover:bg-success-600 text-white focus:ring-success-500',
-    ghost: 'bg-transparent hover:bg-gray-100 text-gray-700 focus:ring-primary-500',
+    primary: 'bg-[#ef233c] hover:bg-[#ff3b3b] text-white focus:ring-[#ff3b3b]',
+    secondary: 'bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 focus:ring-[#ff3b3b]',
+    danger: 'bg-[#b91c1c] hover:bg-[#dc2626] text-white focus:ring-[#ef4444]',
+    success: 'bg-[#16a34a] hover:bg-[#22c55e] text-white focus:ring-[#4ade80]',
+    ghost: 'bg-transparent hover:bg-gray-100 text-gray-700 focus:ring-[#ff3b3b]',
   };
 
   const sizes = {

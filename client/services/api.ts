@@ -139,6 +139,7 @@ export const trafficPoliceAPI = {
 export const emergencyAPI = {
   create: (data: any) => api.post('/emergencies', data),
   update: (id: string, data: any) => api.put(`/emergencies/${id}`, data),
+  remove: (id: string) => api.delete(`/emergencies/${id}`),
   sendLocationSMS: (id: string) => api.post(`/emergencies/${id}/send-sms`),
   setManualLocation: (id: string, data: { latitude: number; longitude: number; address?: string }) =>
     api.post(`/emergencies/${id}/set-location`, data),

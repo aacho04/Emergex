@@ -11,6 +11,7 @@ export enum EmergencyStatus {
 }
 
 export enum PatientCondition {
+  CRITICAL = 'critical',
   SERIOUS = 'serious',
   MODERATE = 'moderate',
   MINOR = 'minor',

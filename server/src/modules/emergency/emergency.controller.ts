@@ -154,6 +154,17 @@ export class EmergencyController {
     }
   }
 
+  async deleteEmergency(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const userId = (req as any).user.id;
+      const result = await emergencyService.deleteEmergency(id, userId);
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
   async getStats(req: Request, res: Response, next: NextFunction) {
     try {
       const stats = await emergencyService.getStats();
