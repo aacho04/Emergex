@@ -110,10 +110,10 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <section className="relative hero-shell text-white overflow-hidden">
-        <div className="absolute inset-0 bg-grid-pattern opacity-15" />
-        <div className="absolute -left-32 top-8 h-64 w-64 rounded-full bg-[#ef233c]/20 blur-3xl" />
-        <div className="absolute right-0 top-24 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+        <div className="absolute inset-0 bg-grid-pattern opacity-15 pointer-events-none" />
+        <div className="absolute -left-32 top-8 h-64 w-64 rounded-full bg-[#ef233c]/20 blur-3xl pointer-events-none" />
+        <div className="absolute right-0 top-24 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full chip-glow text-xs font-semibold tracking-wide">
