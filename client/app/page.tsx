@@ -11,6 +11,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { volunteerFormSchema, VolunteerFormData } from '@/utils/validators';
 import Link from 'next/link';
+import InstallPWAButton from '@/components/InstallPWAButton';
+import EnableNotifications from '@/components/EnableNotifications';
 
 export default function HomePage() {
   const [toast, setToast] = useState<{message: string; type: 'success' | 'error'} | null>(null);
@@ -144,6 +146,8 @@ export default function HomePage() {
                     System Login
                   </Button>
                 </Link>
+                <InstallPWAButton />
+                <EnableNotifications />
               </div>
             </div>
 

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>You are offline</title>
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #0b0f1a;
+        color: #f8fafc;
+      }
+
+      main {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px;
+      }
+
+      .card {
+        max-width: 520px;
+        width: 100%;
+        background: #111827;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+        text-align: center;
+      }
+
+      h1 {
+        font-size: 26px;
+        margin: 0 0 12px;
+      }
+
+      p {
+        margin: 0;
+        line-height: 1.6;
+        font-size: 16px;
+        color: #cbd5f5;
+      }
+
+      .message {
+        margin-bottom: 20px;
+      }
+
+      .cta {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 14px 28px;
+        border-radius: 999px;
+        background: #ef233c;
+        color: #ffffff;
+        font-weight: 700;
+        text-decoration: none;
+        box-shadow: 0 12px 24px rgba(239, 35, 60, 0.35);
+      }
+
+      .cta:active {
+        transform: translateY(1px);
+      }
+
+      .instructions {
+        margin-top: 24px;
+        text-align: left;
+        background: rgba(15, 23, 42, 0.6);
+        border-radius: 12px;
+        padding: 16px 18px;
+        color: #e2e8f0;
+      }
+
+      .instructions h2 {
+        font-size: 16px;
+        margin: 0 0 8px;
+        color: #f8fafc;
+      }
+
+      .instructions ul {
+        margin: 0;
+        padding-left: 18px;
+        line-height: 1.6;
+        font-size: 14px;
+      }
+
+      .instructions li {
+        margin-bottom: 6px;
+      }
+
+      @media (max-width: 600px) {
+        .card {
+          padding: 24px;
+        }
+
+        h1 {
+          font-size: 22px;
+        }
+
+        .cta {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="card">
+        <h1>You are offline</h1>
+        <p class="message">Emergency services may still be reachable.</p>
+        <a class="cta" href="tel:108" aria-label="Call 108 emergency number">
+          Call 108
+        </a>
+        <div class="instructions">
+          <h2>What to do now</h2>
+          <ul>
+            <li>Call 108 for immediate assistance if you are in danger.</li>
+            <li>Move to a safe location and keep calm.</li>
+            <li>Stay with the patient and monitor breathing.</li>
+            <li>Retry when your network returns to send live updates.</li>
+          </ul>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
