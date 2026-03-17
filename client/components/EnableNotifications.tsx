@@ -84,7 +84,7 @@ export default function EnableNotifications() {
   return (
     <button
       onClick={handleEnableNotifications}
-      className="bg-red-600 text-white rounded-lg px-6 py-3 font-semibold hover:bg-red-700 transition-colors"
+      className="bg-red-600 text-white rounded-md px-4 py-2 text-sm font-semibold hover:bg-red-700 transition-colors"
       disabled={isLoading}
     >
       {isLoading ? 'Enabling...' : 'Enable Emergency Alerts'}

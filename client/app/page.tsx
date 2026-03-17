@@ -128,24 +128,14 @@ export default function HomePage() {
               <p className="mt-6 text-lg text-slate-200 leading-relaxed max-w-xl">
                 Emergex connects citizens, ERS officers, ambulances, hospitals, traffic police, and volunteers for swift and coordinated emergency response.
               </p>
-              <div className="mt-10 flex flex-col sm:flex-row gap-4">
+              <div className="mt-10 flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={handleSOSClick}
-                  className="sos-button cta-crimson inline-flex items-center justify-center gap-2 text-white font-semibold rounded-lg px-6 py-3 text-base transition-colors"
+                  className="sos-button cta-crimson inline-flex items-center justify-center gap-2 text-white font-semibold rounded-lg px-5 py-2 text-sm transition-colors"
                 >
                   <Phone className="h-5 w-5" />
                   SOS - Call 108
                 </button>
-                <Link href="/login">
-                  <Button
-                    variant="secondary"
-                    size="lg"
-                    className="cta-ghost text-white hover:bg-white/15 w-full sm:w-auto"
-                    icon={<ArrowRight className="h-5 w-5" />}
-                  >
-                    System Login
-                  </Button>
-                </Link>
                 <InstallPWAButton />
                 <EnableNotifications />
               </div>
